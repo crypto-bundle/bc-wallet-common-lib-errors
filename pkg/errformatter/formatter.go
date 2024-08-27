@@ -40,6 +40,19 @@ import (
 
 const CallerStackSkip = 2
 
+// ScopedErrorOnly combines given error with details, WITHOUT function name...
+func ScopedErrorOnly(err error, scope string, details ...string) error {
+	if err == nil {
+		return nil
+	}
+
+	if len(details) == 0 {
+		return err
+	}
+
+	return fmt.Errorf("%s: %w -> %s", scope, err, strings.Join(details, ", "))
+}
+
 // ErrorOnly combines given error with details, WITHOUT function name...
 func ErrorOnly(err error, details ...string) error {
 	if err == nil {
@@ -53,9 +66,22 @@ func ErrorOnly(err error, details ...string) error {
 	return fmt.Errorf("%w -> %s", err, strings.Join(details, ", "))
 }
 
+// ScopedError combines given error with details and finishes with caller func name...
+func ScopedError(err error, scope string, details ...string) error {
+	return ScopedErrorOnly(err, scope, append(details, getFuncName())...)
+}
+
 // Error combines given error with details and finishes with caller func name...
 func Error(err error, details ...string) error {
 	return ErrorOnly(err, append(details, getFuncName())...)
+}
+
+// NewScopedError returns error by combining given details and finishes with caller func name...
+//
+//nolint:err113
+func NewScopedError(scope string, details ...string) error {
+	return fmt.Errorf("%s: %s", scope,
+		strings.Join(append(details, getFuncName()), ", "))
 }
 
 // NewError returns error by combining given details and finishes with caller func name...
@@ -63,6 +89,16 @@ func Error(err error, details ...string) error {
 //nolint:err113
 func NewError(details ...string) error {
 	return fmt.Errorf("%s", strings.Join(append(details, getFuncName()), ", "))
+}
+
+// NewScopedErrorf returns error by combining given details and finishes with caller func name, printf formatting...
+//
+//nolint:err113
+func NewScopedErrorf(format string, scope string, args ...interface{}) error {
+	return fmt.Errorf(
+		"%s: %s", scope,
+		strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
+	)
 }
 
 // NewErrorf returns error by combining given details and finishes with caller func name, printf formatting...
@@ -73,6 +109,14 @@ func NewErrorf(format string, args ...interface{}) error {
 		"%s",
 		strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
 	)
+}
+
+// ScopedErrorf combines given error with details and finishes with caller func name, printf formatting...
+func ScopedErrorf(err error, scope string,
+	format string,
+	args ...interface{},
+) error {
+	return ScopedErrorOnly(err, scope, fmt.Sprintf(format, args...), getFuncName())
 }
 
 // Errorf combines given error with details and finishes with caller func name, printf formatting...
