@@ -40,6 +40,10 @@ func (s *service) ErrorOnly(err error, details ...string) error {
 	return ErrorOnly(err, details...)
 }
 
+func (s *service) Error(err error, details ...string) error {
+	return Error(err, details...)
+}
+
 func (s *service) Errorf(err error, format string, args ...interface{}) error {
 	return Errorf(err, format, args...)
 }
@@ -54,4 +58,34 @@ func (s *service) NewErrorf(format string, args ...interface{}) error {
 
 func NewErrorFormatter() *service {
 	return &service{}
+}
+
+type serviceScoped struct {
+	scope string
+}
+
+func (s *serviceScoped) ErrorOnly(err error, details ...string) error {
+	return ScopedErrorOnly(err, s.scope, details...)
+}
+
+func (s *serviceScoped) Error(err error, details ...string) error {
+	return ScopedError(err, s.scope, details...)
+}
+
+func (s *serviceScoped) Errorf(err error, format string, args ...interface{}) error {
+	return ScopedErrorf(err, s.scope, format, args...)
+}
+
+func (s *serviceScoped) NewError(details ...string) error {
+	return NewScopedError(s.scope, details...)
+}
+
+func (s *serviceScoped) NewErrorf(format string, args ...interface{}) error {
+	return NewScopedErrorf(format, s.scope, args...)
+}
+
+func NewScopedErrorFormatter(scope string) *serviceScoped {
+	return &serviceScoped{
+		scope: scope,
+	}
 }
