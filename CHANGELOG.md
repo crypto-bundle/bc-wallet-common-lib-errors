@@ -10,3 +10,8 @@
 ### Added
 * Added new scoped error service-component
 * Added scoped exported functions
+
+## [v0.0.3] - 29.02.2023
+### Added
+* Added new scoped error service-component
+* Added scoped exported functions
