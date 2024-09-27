@@ -81,6 +81,25 @@ linters-settings:
         severity: warning
         disabled: true
 
+  wrapcheck:
+    ignoreSigs:
+      - errors.New(
+      - errors.Unwrap(
+      - errors.Join(
+      - .Wrap(
+      - .Wrapf(
+      - .WithMessage(
+      - .WithMessagef(
+      - .WithStack(
+      # bc-wallet-common-lib-errors
+      - .ErrorNoWrap
+      - .ErrNoWrap
+      - .Errorf(
+      - .ErrorOnly(
+      - .Error(
+      - .NewError(
+      - .NewErrorf(
+
   exhaustive:
     check: []
     explicit-exhaustive-switch: true
