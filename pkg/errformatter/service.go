@@ -32,8 +32,21 @@
 
 package errformatter
 
+var (
+	_ selfService = (*service)(nil)
+	_ selfService = (*serviceScoped)(nil)
+)
+
 //nolint:gofumpt
 type service struct {
+}
+
+func (s *service) ErrNoWrap(err error) error {
+	return ErrorNoWrap(err)
+}
+
+func (s *service) ErrorNoWrap(err error) error {
+	return ErrorNoWrap(err)
 }
 
 func (s *service) ErrorOnly(err error, details ...string) error {
@@ -62,6 +75,14 @@ func NewErrorFormatter() *service {
 
 type serviceScoped struct {
 	scope string
+}
+
+func (s *serviceScoped) ErrNoWrap(err error) error {
+	return ErrorNoWrap(err)
+}
+
+func (s *serviceScoped) ErrorNoWrap(err error) error {
+	return ErrorNoWrap(err)
 }
 
 func (s *serviceScoped) ErrorOnly(err error, details ...string) error {

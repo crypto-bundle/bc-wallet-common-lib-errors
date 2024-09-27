@@ -38,7 +38,6 @@ import (
 )
 
 func TestErrorFormatting(t *testing.T) {
-
 	t.Run("error only", func(t *testing.T) {
 		const expectedResult = "test error -> abc"
 
@@ -83,6 +82,21 @@ func TestErrorFormatting(t *testing.T) {
 		const expectedResult = "test error -> test arg, [func5]"
 
 		err := Errorf(errors.New("test error"), "test %s", "arg")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
+
+	t.Run("error no wrap", func(t *testing.T) {
+		const expectedResult = "test error"
+		var errExpected = errors.New(expectedResult)
+
+		err := ErrorNoWrap(errExpected)
+		if !errors.Is(err, errExpected) {
+			t.Errorf("error not equal with expected %s, %s", err.Error(), errExpected.Error())
+		}
+
 		if err.Error() != expectedResult {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
 				err.Error(), expectedResult)

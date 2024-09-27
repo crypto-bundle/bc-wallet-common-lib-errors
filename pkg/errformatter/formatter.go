@@ -38,6 +38,14 @@ import (
 	"strings"
 )
 
+func ErrorNoWrap(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	return err
+}
+
 // ErrorOnly combines given error with details, WITHOUT function name...
 func ErrorOnly(err error, details ...string) error {
 	if err == nil {
