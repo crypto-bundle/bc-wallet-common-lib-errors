@@ -2,7 +2,7 @@
 
 ## [v0.0.4] - 27.09.2024
 ### Added
-* Added ErrNoWrap method to all implementations error formatters
+* Added ErrNoWrap/ErrorNoWrap method to all implementations of error formatters
 ### Changed
 * Fixed linet issues
 
