@@ -32,7 +32,65 @@
 
 package errformatter
 
-const (
-	CallerStackSkip = 2
-	ValueMissing    = -1
-)
+var _ selfService = (*serviceValued)(nil)
+
+type serviceValued struct {
+}
+
+func (s *serviceValued) ErrGetCode(err error) int {
+	return s.ErrorGetCode(err)
+}
+
+func (s *serviceValued) ErrorGetCode(err error) int {
+	return ValuedErrorGetCode(err)
+}
+
+func (s *serviceValued) ErrWithCode(err error, code int) error {
+	return s.ErrorWithCode(err, code)
+}
+
+func (s *serviceValued) ErrorWithCode(err error, code int) error {
+	if code <= 0 {
+		panic("errfmt: code must be positive value")
+	}
+
+	return ValuedErrorOnly(err, Value{
+		num: KindCode,
+		any: code,
+	})
+}
+
+func (s *serviceValued) ErrNoWrap(err error) error {
+	return s.ErrorNoWrap(err)
+}
+
+func (s *serviceValued) ErrorNoWrap(err error) error {
+	return ErrorNoWrap(err)
+}
+
+func (s *serviceValued) ErrorOnly(err error, details ...string) error {
+	return ValuedErrorOnly(err, Value{
+		num: KindDetails,
+		any: details,
+	})
+}
+
+func (s *serviceValued) Error(err error, details ...string) error {
+	return Error(err, details...)
+}
+
+func (s *serviceValued) Errorf(err error, format string, args ...interface{}) error {
+	return Errorf(err, format, args...)
+}
+
+func (s *serviceValued) NewError(details ...string) error {
+	return NewError(details...)
+}
+
+func (s *serviceValued) NewErrorf(format string, args ...interface{}) error {
+	return NewErrorf(format, args...)
+}
+
+func NewValuesErrorFormatter() *serviceValued {
+	return &serviceValued{}
+}

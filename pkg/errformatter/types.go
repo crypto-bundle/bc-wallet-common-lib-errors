@@ -32,7 +32,49 @@
 
 package errformatter
 
+type Bits uint8
+
 const (
-	CallerStackSkip = 2
-	ValueMissing    = -1
+	ValueDetailsIsSet Bits = 1 << iota
+	ValueScopeIsSet
+	ValueCodeIsSet
+	ValuePublicCodeIsSet
 )
+
+func (b Bits) Set(flag Bits) Bits    { return b | flag }
+func (b Bits) Clear(flag Bits) Bits  { return b &^ flag }
+func (b Bits) Toggle(flag Bits) Bits { return b ^ flag }
+func (b Bits) Has(flag Bits) bool    { return b&flag != 0 }
+
+// A Value can represent any Go value, but unlike type any,
+// it can represent most small values without an allocation.
+// The zero Value corresponds to nil.
+type Value struct {
+	_ [0]func() // disallow ==
+	// num holds the value for Kinds KindScope, KindCode
+	num Kind
+	// If any is of type Kind, then the value is in num as described above.
+	any any
+}
+
+// Kind is the kind of a [Value].
+type Kind uint
+
+// The following list is sorted alphabetically, but it's also important that
+// KindAny is 0 so that a zero Value represents nil.
+
+const (
+	KindEmpty Kind = iota
+	KindDetails
+	KindScope
+	KindCode
+	KindPublicCode
+)
+
+var kindStrings = []string{
+	"Emtpy",
+	"Details",
+	"Scope",
+	"Code",
+	"PublicCode",
+}
