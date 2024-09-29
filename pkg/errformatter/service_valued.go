@@ -35,6 +35,7 @@ package errformatter
 var _ selfService = (*serviceValued)(nil)
 
 type serviceValued struct {
+	defaultValues []Value
 }
 
 func (s *serviceValued) ErrGetCode(err error) int {
@@ -69,6 +70,17 @@ func (s *serviceValued) ErrorNoWrap(err error) error {
 }
 
 func (s *serviceValued) ErrorOnly(err error, details ...string) error {
+	if count := len(s.defaultValues); count > 1 {
+		valuesList := make([]Value, count+1)
+		copy(valuesList, s.defaultValues)
+		valuesList[count+1] = Value{
+			num: KindDetails,
+			any: details,
+		}
+
+		return MultiValuedErrorOnly(err, valuesList...)
+	}
+
 	return ValuedErrorOnly(err, Value{
 		num: KindDetails,
 		any: details,
@@ -80,17 +92,19 @@ func (s *serviceValued) Error(err error, details ...string) error {
 }
 
 func (s *serviceValued) Errorf(err error, format string, args ...interface{}) error {
-	return Errorf(err, format, args...)
+	return ValuedErrorf(err, format, args...)
 }
 
 func (s *serviceValued) NewError(details ...string) error {
-	return NewError(details...)
+	return ValuedNewError(details...)
 }
 
 func (s *serviceValued) NewErrorf(format string, args ...interface{}) error {
 	return NewErrorf(format, args...)
 }
 
-func NewValuesErrorFormatter() *serviceValued {
-	return &serviceValued{}
+func NewValuesErrorFormatter(values ...Value) *serviceValued {
+	return &serviceValued{
+		defaultValues: values,
+	}
 }

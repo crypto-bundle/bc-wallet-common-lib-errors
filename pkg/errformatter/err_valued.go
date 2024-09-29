@@ -163,3 +163,20 @@ func MultiValuedErrorOnly(err error, value ...Value) *ValuedError {
 
 	return vErr.setValues(value...)
 }
+
+// ValuedErrorf combines given error with details and finishes with caller func name, printf formatting...
+func ValuedErrorf(err error, format string, args ...interface{}) *ValuedError {
+	return &ValuedError{
+		Err:     ErrorOnly(err, fmt.Sprintf(format, args...), getFuncName()),
+		values:  make([...]Value, 0, len(kindStrings)-1),
+		settled: 0,
+	}
+}
+
+// ValuedNewError combines given error with details and finishes with caller func name, printf formatting...
+func ValuedNewError(details ...string) *ValuedError {
+	return ValuedErrorOnly(emptyErr, Value{
+		num: KindDetails,
+		any: append(details, getFuncName()),
+	})
+}

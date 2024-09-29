@@ -32,6 +32,8 @@
 
 package errformatter
 
+import "errors"
+
 type Bits uint8
 
 const (
@@ -78,3 +80,5 @@ var kindStrings = []string{
 	"Code",
 	"PublicCode",
 }
+
+var emptyErr = errors.New("")
