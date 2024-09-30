@@ -74,7 +74,6 @@ func (s *serviceValuedWithDefaults) Error(err error, details ...string) error {
 	copy(valuesList, s.defaultValues)
 
 	return ValuedError(err, valuesList, details...)
-
 }
 
 func (s *serviceValuedWithDefaults) Errorf(err error,

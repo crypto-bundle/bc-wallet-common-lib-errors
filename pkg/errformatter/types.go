@@ -44,18 +44,15 @@ const (
 )
 
 func (b *Bits) Set(flag Bits) {
-	*b = *b | flag
-	return
+	*b |= flag
 }
 
 func (b *Bits) Clear(flag Bits) {
-	*b = *b &^ flag
-	return
+	*b &^= flag
 }
 
 func (b *Bits) Toggle(flag Bits) {
-	*b = *b ^ flag
-	return
+	*b ^= flag
 }
 
 func (b *Bits) Has(flag Bits) bool {
@@ -105,7 +102,7 @@ func (k Kind) Bits() Bits {
 }
 
 var kindStrings = []string{
-	"Emtpy",
+	"Empty",
 	"Details",
 	"Scope",
 	"Code",
