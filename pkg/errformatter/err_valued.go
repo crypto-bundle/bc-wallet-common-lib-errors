@@ -160,7 +160,11 @@ func ValuedError(err error, values []Value, details ...string) *valuedError {
 }
 
 // ValuedErrorf combines given error with details and finishes with caller func name, printf formatting...
-func ValuedErrorf(err error, values []Value, format string, args ...interface{}) *valuedError {
+func ValuedErrorf(err error,
+	values []Value,
+	format string,
+	args ...interface{},
+) *valuedError {
 	if err == nil {
 		return nil
 	}
@@ -179,26 +183,30 @@ func ValuedErrorf(err error, values []Value, format string, args ...interface{})
 }
 
 // ValuedNewError combines given error with details and finishes with caller func name, printf formatting...
-func ValuedNewError(details ...string) *valuedError {
+func ValuedNewError(values []Value, details ...string) *valuedError {
+	details = append(details, getFuncName())
+
 	vErr := &valuedError{
-		Err:     fmt.Errorf("%s", strings.Join(append(details, getFuncName()), ", ")),
+		Err:     fmt.Errorf("%s", strings.Join(details, ", ")),
 		values:  make([]Value, kindCount),
 		settled: 0,
 	}
 
-	return vErr.setValue(Value{
+	return vErr.setValues(append(values, Value{
 		num: KindDetails,
-		any: append(details, getFuncName()),
-	})
+		any: details,
+	})...)
 }
 
 // ValuedNewErrorf combines given error with details and finishes with caller func name, printf formatting...
-func ValuedNewErrorf(format string, args ...interface{}) *valuedError {
-	return &valuedError{
+func ValuedNewErrorf(values []Value, format string, args ...interface{}) *valuedError {
+	vErr := &valuedError{
 		Err: fmt.Errorf("%s",
 			strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
 		),
 		values:  make([]Value, kindCount),
 		settled: 0,
 	}
+
+	return vErr.setValues(values...)
 }

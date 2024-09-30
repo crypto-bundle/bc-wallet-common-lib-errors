@@ -35,15 +35,8 @@ package errformatter
 var _ selfService = (*serviceValuedWithDefaults)(nil)
 
 type serviceValuedWithDefaults struct {
+	*serviceValued
 	defaultValues []Value
-}
-
-func (s *serviceValuedWithDefaults) ErrGetCode(err error) int {
-	return s.ErrorGetCode(err)
-}
-
-func (s *serviceValuedWithDefaults) ErrorGetCode(err error) int {
-	return ValuedErrorGetCode(err)
 }
 
 func (s *serviceValuedWithDefaults) ErrWithCode(err error, code int) error {
@@ -59,14 +52,6 @@ func (s *serviceValuedWithDefaults) ErrorWithCode(err error, code int) error {
 		num: KindCode,
 		any: code,
 	})
-}
-
-func (s *serviceValuedWithDefaults) ErrNoWrap(err error) error {
-	return s.ErrorNoWrap(err)
-}
-
-func (s *serviceValuedWithDefaults) ErrorNoWrap(err error) error {
-	return ErrorNoWrap(err)
 }
 
 func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) error {
@@ -92,21 +77,32 @@ func (s *serviceValuedWithDefaults) Error(err error, details ...string) error {
 
 }
 
-func (s *serviceValuedWithDefaults) Errorf(err error, format string, args ...interface{}) error {
-	if count := len(s.defaultValues); count > 1 {
-		valuesList := make([]Value, count)
-		copy(valuesList, s.defaultValues)
+func (s *serviceValuedWithDefaults) Errorf(err error,
+	format string,
+	args ...interface{},
+) error {
+	count := len(s.defaultValues)
 
-		return ValuedErrorf(err, valuesList, format, args...)
-	}
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
 
-	return ValuedErrorf(err, nil, format, args...)
+	return ValuedErrorf(err, valuesList, format, args...)
 }
 
 func (s *serviceValuedWithDefaults) NewError(details ...string) error {
-	return ValuedNewError(details...)
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedNewError(valuesList, details...)
 }
 
 func (s *serviceValuedWithDefaults) NewErrorf(format string, args ...interface{}) error {
-	return ValuedNewErrorf(format, args...)
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedNewErrorf(valuesList, format, args...)
 }
