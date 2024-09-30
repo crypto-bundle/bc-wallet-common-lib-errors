@@ -88,11 +88,25 @@ func (s *serviceValued) ErrorOnly(err error, details ...string) error {
 }
 
 func (s *serviceValued) Error(err error, details ...string) error {
-	return Error(err, details...)
+	if count := len(s.defaultValues); count > 1 {
+		valuesList := make([]Value, count)
+		copy(valuesList, s.defaultValues)
+
+		return ValuedError(err, valuesList, details...)
+	}
+
+	return ValuedError(err, nil, details...)
 }
 
 func (s *serviceValued) Errorf(err error, format string, args ...interface{}) error {
-	return ValuedErrorf(err, format, args...)
+	if count := len(s.defaultValues); count > 1 {
+		valuesList := make([]Value, count)
+		copy(valuesList, s.defaultValues)
+
+		return ValuedErrorf(err, valuesList, format, args...)
+	}
+
+	return ValuedErrorf(err, nil, format, args...)
 }
 
 func (s *serviceValued) NewError(details ...string) error {
@@ -100,7 +114,7 @@ func (s *serviceValued) NewError(details ...string) error {
 }
 
 func (s *serviceValued) NewErrorf(format string, args ...interface{}) error {
-	return NewErrorf(format, args...)
+	return ValuedNewErrorf(format, args...)
 }
 
 func NewValuesErrorFormatter(values ...Value) *serviceValued {

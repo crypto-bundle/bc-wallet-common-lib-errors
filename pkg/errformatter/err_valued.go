@@ -38,23 +38,23 @@ import (
 	"strings"
 )
 
-type ValuedError struct {
+type valuedError struct {
 	Err     error
 	values  [...]Value
 	settled Bits
 }
 
 // Error to string converter...
-func (e ValuedError) Error() string {
+func (e valuedError) Error() string {
 	return e.Err.Error()
 }
 
 // Unwrap returns previous error...
-func (e ValuedError) Unwrap() error {
+func (e valuedError) Unwrap() error {
 	return errors.Unwrap(e.Err)
 }
 
-func (e *ValuedError) getCode() int {
+func (e *valuedError) getCode() int {
 	if !e.settled.Has(ValueCodeIsSet) {
 		return ValueMissing
 	}
@@ -67,7 +67,7 @@ func (e *ValuedError) getCode() int {
 	return code
 }
 
-func (e *ValuedError) setValues(values ...Value) *ValuedError {
+func (e *valuedError) setValues(values ...Value) *valuedError {
 	for i := range values {
 		_ = e.setValue(values[i])
 	}
@@ -75,7 +75,7 @@ func (e *ValuedError) setValues(values ...Value) *ValuedError {
 	return e
 }
 
-func (e *ValuedError) setValue(value Value) *ValuedError {
+func (e *valuedError) setValue(value Value) *valuedError {
 	switch {
 	case value.num == KindDetails && e.settled.Has(ValueScopeIsSet):
 		scope := e.values[KindScope].any.(string)
@@ -120,7 +120,7 @@ func (e *ValuedError) setValue(value Value) *ValuedError {
 }
 
 func ValuedErrorGetCode(err error) int {
-	var vErr ValuedError
+	var vErr valuedError
 	if !errors.As(err, &vErr) {
 		return ValueMissing
 	}
@@ -129,12 +129,12 @@ func ValuedErrorGetCode(err error) int {
 }
 
 // ValuedErrorOnly combines given error with given Value, all Value type values must contain pre-reserved Kind...
-func ValuedErrorOnly(err error, value Value) *ValuedError {
+func ValuedErrorOnly(err error, value Value) *valuedError {
 	if err == nil {
 		return nil
 	}
 
-	var vErr ValuedError
+	var vErr valuedError
 	if errors.As(err, &vErr) {
 		return vErr.setValue(value)
 	}
@@ -147,12 +147,12 @@ func ValuedErrorOnly(err error, value Value) *ValuedError {
 }
 
 // MultiValuedErrorOnly combines given error with given Value list, all Value type values must contain pre-reserved Kind...
-func MultiValuedErrorOnly(err error, value ...Value) *ValuedError {
+func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 	if err == nil {
 		return nil
 	}
 
-	var vErr ValuedError
+	var vErr valuedError
 	if errors.As(err, &vErr) {
 		return vErr.setValues(value...)
 	}
@@ -164,19 +164,50 @@ func MultiValuedErrorOnly(err error, value ...Value) *ValuedError {
 	return vErr.setValues(value...)
 }
 
+// ValuedError combines given error with details and finishes with caller func name, printf formatting...
+func ValuedError(err error, values []Value, details ...string) *valuedError {
+	values = append(values, Value{
+		num: KindDetails,
+		any: append(details, getFuncName()),
+	})
+
+	return MultiValuedErrorOnly(err, values...)
+}
+
 // ValuedErrorf combines given error with details and finishes with caller func name, printf formatting...
-func ValuedErrorf(err error, format string, args ...interface{}) *ValuedError {
-	return &ValuedError{
+func ValuedErrorf(err error, values []Value, format string, args ...interface{}) *valuedError {
+	if err == nil {
+		return nil
+	}
+
+	var vErr = valuedError{
 		Err:     ErrorOnly(err, fmt.Sprintf(format, args...), getFuncName()),
 		values:  make([...]Value, 0, len(kindStrings)-1),
 		settled: 0,
 	}
+
+	if errors.As(err, &vErr) {
+		_ = vErr.setValues(values...)
+	}
+
+	return &vErr
 }
 
 // ValuedNewError combines given error with details and finishes with caller func name, printf formatting...
-func ValuedNewError(details ...string) *ValuedError {
+func ValuedNewError(details ...string) *valuedError {
 	return ValuedErrorOnly(emptyErr, Value{
 		num: KindDetails,
 		any: append(details, getFuncName()),
 	})
+}
+
+// ValuedNewErrorf combines given error with details and finishes with caller func name, printf formatting...
+func ValuedNewErrorf(format string, args ...interface{}) *valuedError {
+	return &valuedError{
+		Err: fmt.Errorf("%s",
+			strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
+		),
+		values:  make([...]Value, 0, len(kindStrings)-1),
+		settled: 0,
+	}
 }
