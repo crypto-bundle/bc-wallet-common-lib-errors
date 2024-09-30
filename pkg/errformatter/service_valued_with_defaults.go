@@ -32,32 +32,25 @@
 
 package errformatter
 
-var _ selfService = (*serviceValued)(nil)
+var _ selfService = (*serviceValuedWithDefaults)(nil)
 
-type serviceValued struct {
+type serviceValuedWithDefaults struct {
+	defaultValues []Value
 }
 
-func (s *serviceValued) ErrGetCode(err error) int {
+func (s *serviceValuedWithDefaults) ErrGetCode(err error) int {
 	return s.ErrorGetCode(err)
 }
 
-func (s *serviceValued) ErrorGetCode(err error) int {
+func (s *serviceValuedWithDefaults) ErrorGetCode(err error) int {
 	return ValuedErrorGetCode(err)
 }
 
-func (s *serviceValued) ErrWithCode(err error, code int) error {
+func (s *serviceValuedWithDefaults) ErrWithCode(err error, code int) error {
 	return s.ErrorWithCode(err, code)
 }
 
-func (s *serviceValued) ErrNoWrap(err error) error {
-	return s.ErrorNoWrap(err)
-}
-
-func (s *serviceValued) ErrorNoWrap(err error) error {
-	return ErrorNoWrap(err)
-}
-
-func (s *serviceValued) ErrorWithCode(err error, code int) error {
+func (s *serviceValuedWithDefaults) ErrorWithCode(err error, code int) error {
 	if code <= 0 {
 		panic("errfmt: code must be positive value")
 	}
@@ -68,35 +61,52 @@ func (s *serviceValued) ErrorWithCode(err error, code int) error {
 	})
 }
 
-func (s *serviceValued) ErrorOnly(err error, details ...string) error {
-	return ValuedErrorOnly(err, Value{
-		num: KindDetails,
-		any: details,
-	})
+func (s *serviceValuedWithDefaults) ErrNoWrap(err error) error {
+	return s.ErrorNoWrap(err)
 }
 
-func (s *serviceValued) Errorf(err error, format string, args ...interface{}) error {
+func (s *serviceValuedWithDefaults) ErrorNoWrap(err error) error {
+	return ErrorNoWrap(err)
+}
+
+func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count+1)
+	copy(valuesList, s.defaultValues)
+	valuesList[count+1] = Value{
+		num: KindDetails,
+		any: details,
+	}
+
+	return MultiValuedErrorOnly(err, valuesList...)
+}
+
+func (s *serviceValuedWithDefaults) Error(err error, details ...string) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedError(err, valuesList, details...)
+
+}
+
+func (s *serviceValuedWithDefaults) Errorf(err error, format string, args ...interface{}) error {
+	if count := len(s.defaultValues); count > 1 {
+		valuesList := make([]Value, count)
+		copy(valuesList, s.defaultValues)
+
+		return ValuedErrorf(err, valuesList, format, args...)
+	}
+
 	return ValuedErrorf(err, nil, format, args...)
 }
 
-func (s *serviceValued) Error(err error, details ...string) error {
-	return ValuedError(err, nil, details...)
-}
-
-func (s *serviceValued) NewError(details ...string) error {
+func (s *serviceValuedWithDefaults) NewError(details ...string) error {
 	return ValuedNewError(details...)
 }
 
-func (s *serviceValued) NewErrorf(format string, args ...interface{}) error {
+func (s *serviceValuedWithDefaults) NewErrorf(format string, args ...interface{}) error {
 	return ValuedNewErrorf(format, args...)
-}
-
-func NewValuesErrorFormatter(values ...Value) selfService {
-	if len(values) > 0 {
-		return &serviceValuedWithDefaults{
-			defaultValues: values,
-		}
-	}
-
-	return &serviceValued{}
 }
