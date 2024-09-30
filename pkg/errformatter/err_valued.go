@@ -76,44 +76,29 @@ func (e *valuedError) setValues(values ...Value) *valuedError {
 }
 
 func (e *valuedError) setValue(value Value) *valuedError {
+	e.values[value.num] = value
+	e.settled.Set(value.num.Bits())
+
+	return e
+}
+
+func (e *valuedError) setError(err error) *valuedError {
 	switch {
-	case value.num == KindDetails && e.settled.Has(ValueScopeIsSet):
+	case e.settled.Has(ValueDetailsIsSet) && e.settled.Has(ValueScopeIsSet):
 		scope := e.values[KindScope].any.(string)
-		details := value.any.([]string)
-
-		e.values[value.num] = value
-		e.settled.Set(ValueDetailsIsSet)
-		e.Err = fmt.Errorf("%s: %w -> %s", scope, e, strings.Join(details, ", "))
-
-	case value.num == KindDetails && !e.settled.Has(ValueScopeIsSet):
-		details := value.any.([]string)
-
-		e.values[value.num] = value
-		e.settled.Set(ValueDetailsIsSet)
-		e.Err = fmt.Errorf("%w -> %s", e, strings.Join(details, ", "))
-
-	case value.num == KindScope && e.settled.Has(ValueDetailsIsSet):
 		details := e.values[KindDetails].any.([]string)
-		scope := value.any.(string)
 
-		e.values[value.num] = value
-		e.settled.Set(ValueScopeIsSet)
-		e.Err = fmt.Errorf("%s: %w -> %s", scope, e, strings.Join(details, ", "))
+		e.Err = fmt.Errorf("%s: %w -> %s", scope, err, strings.Join(details, ", "))
 
-	case value.num == KindScope && !e.settled.Has(ValueDetailsIsSet):
-		scope := value.any.(string)
+	case e.settled.Has(ValueDetailsIsSet) && !e.settled.Has(ValueScopeIsSet):
+		details := e.values[KindDetails].any.([]string)
 
-		e.values[value.num] = value
-		e.settled.Set(ValueScopeIsSet)
-		e.Err = fmt.Errorf("%s: %w", scope, e)
+		e.Err = fmt.Errorf("%w -> %s", err, strings.Join(details, ", "))
 
-	case value.num == KindCode:
-		e.settled.Set(ValueCodeIsSet)
-		e.values[KindCode] = value
+	case !e.settled.Has(ValueDetailsIsSet) && e.settled.Has(ValueScopeIsSet):
+		scope := e.values[KindScope].any.(string)
 
-	case value.num == KindPublicCode:
-		e.settled.Set(ValuePublicCodeIsSet)
-		e.values[KindPublicCode] = value
+		e.Err = fmt.Errorf("%s: %w", scope, err)
 	}
 
 	return e
@@ -139,11 +124,11 @@ func ValuedErrorOnly(err error, value Value) *valuedError {
 		return vErr.setValue(value)
 	}
 
-	vErr.values = make([]Value, 0, len(kindStrings)-1)
+	vErr.values = make([]Value, kindCount)
 	vErr.Err = nil
 	vErr.settled = 0
 
-	return vErr.setValue(value)
+	return vErr.setValue(value).setError(err)
 }
 
 // MultiValuedErrorOnly combines given error with given Value list, all Value type values must contain pre-reserved Kind...
@@ -157,11 +142,11 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 		return vErr.setValues(value...)
 	}
 
-	vErr.values = make([]Value, 0, len(kindStrings)-1)
+	vErr.values = make([]Value, kindCount)
 	vErr.Err = nil
 	vErr.settled = 0
 
-	return vErr.setValues(value...)
+	return vErr.setValues(value...).setError(err)
 }
 
 // ValuedError combines given error with details and finishes with caller func name, printf formatting...
@@ -171,7 +156,7 @@ func ValuedError(err error, values []Value, details ...string) *valuedError {
 		any: append(details, getFuncName()),
 	})
 
-	return MultiValuedErrorOnly(err, values...)
+	return MultiValuedErrorOnly(err, values...).setError(err)
 }
 
 // ValuedErrorf combines given error with details and finishes with caller func name, printf formatting...
@@ -195,7 +180,13 @@ func ValuedErrorf(err error, values []Value, format string, args ...interface{})
 
 // ValuedNewError combines given error with details and finishes with caller func name, printf formatting...
 func ValuedNewError(details ...string) *valuedError {
-	return ValuedErrorOnly(emptyErr, Value{
+	vErr := &valuedError{
+		Err:     fmt.Errorf("%s", strings.Join(append(details, getFuncName()), ", ")),
+		values:  make([]Value, kindCount),
+		settled: 0,
+	}
+
+	return vErr.setValue(Value{
 		num: KindDetails,
 		any: append(details, getFuncName()),
 	})
@@ -207,7 +198,7 @@ func ValuedNewErrorf(format string, args ...interface{}) *valuedError {
 		Err: fmt.Errorf("%s",
 			strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
 		),
-		values:  make([]Value, 0, len(kindStrings)-1),
+		values:  make([]Value, kindCount),
 		settled: 0,
 	}
 }

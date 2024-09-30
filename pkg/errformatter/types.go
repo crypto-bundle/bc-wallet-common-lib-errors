@@ -43,10 +43,24 @@ const (
 	ValuePublicCodeIsSet
 )
 
-func (b Bits) Set(flag Bits) Bits    { return b | flag }
-func (b Bits) Clear(flag Bits) Bits  { return b &^ flag }
-func (b Bits) Toggle(flag Bits) Bits { return b ^ flag }
-func (b Bits) Has(flag Bits) bool    { return b&flag != 0 }
+func (b *Bits) Set(flag Bits) {
+	*b = *b | flag
+	return
+}
+
+func (b *Bits) Clear(flag Bits) {
+	*b = *b &^ flag
+	return
+}
+
+func (b *Bits) Toggle(flag Bits) {
+	*b = *b ^ flag
+	return
+}
+
+func (b *Bits) Has(flag Bits) bool {
+	return *b&flag != 0
+}
 
 // A Value can represent any Go value, but unlike type any,
 // it can represent most small values without an allocation.
@@ -73,6 +87,23 @@ const (
 	KindPublicCode
 )
 
+func (k Kind) Bits() Bits {
+	switch k {
+	case KindEmpty:
+		return 0
+	case KindDetails:
+		return ValueDetailsIsSet
+	case KindScope:
+		return ValueScopeIsSet
+	case KindCode:
+		return ValueCodeIsSet
+	case KindPublicCode:
+		return ValuePublicCodeIsSet
+	default:
+		return 0
+	}
+}
+
 var kindStrings = []string{
 	"Emtpy",
 	"Details",
@@ -81,4 +112,7 @@ var kindStrings = []string{
 	"PublicCode",
 }
 
-var emptyErr = errors.New("")
+var (
+	emptyErr  = errors.New("")
+	kindCount = len(kindStrings) - 1
+)
