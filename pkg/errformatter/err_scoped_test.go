@@ -38,7 +38,7 @@ import (
 )
 
 func TestScopedErrorFormatting(t *testing.T) {
-	t.Run("error only", func(t *testing.T) {
+	t.Run("error only - scoped error with details", func(t *testing.T) {
 		const expectedResult = "test_scope: test error -> abc"
 
 		err := ScopedErrorOnly(errors.New("test error"), "test_scope", "abc")
@@ -48,55 +48,41 @@ func TestScopedErrorFormatting(t *testing.T) {
 		}
 	})
 
-	t.Run("common error", func(t *testing.T) {
-		const expectedResult = "test error -> [func2]"
+	t.Run("scoped error - details and func", func(t *testing.T) {
+		const expectedResult = "test_scope: test error -> abcd, efg, [func2]"
 
-		err := Error(errors.New("test error"))
+		err := ScopedError(errors.New("test error"), "test_scope", "abcd", "efg")
 		if err.Error() != expectedResult {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
 				err.Error(), expectedResult)
 		}
 	})
 
-	t.Run("new error", func(t *testing.T) {
-		const expectedResult = "test, error, [func3]"
+	t.Run("new scoped error - 2 details args and func", func(t *testing.T) {
+		const expectedResult = "test_scope: error detail, error detail2, [func3]"
 
-		err := NewError("test", "error")
+		err := NewScopedError("test_scope", "error detail", "error detail2")
 		if err.Error() != expectedResult {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
 				err.Error(), expectedResult)
 		}
 	})
 
-	t.Run("new errorf", func(t *testing.T) {
-		const expectedResult = "test arg, [func4]"
+	t.Run("new scoped formatted error - 2 fmt args and func", func(t *testing.T) {
+		const expectedResult = "test_scope: test fmt_arg1 fmt_arg2, [func4]"
 
-		err := NewErrorf("test %s", "arg")
+		err := NewScopedErrorf("test %s %s", "test_scope", "fmt_arg1", "fmt_arg2")
 		if err.Error() != expectedResult {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
 				err.Error(), expectedResult)
 		}
 	})
 
-	t.Run("common errorf", func(t *testing.T) {
-		const expectedResult = "test error -> test arg, [func5]"
+	t.Run("scoped formatted error - two fmt args and func name", func(t *testing.T) {
+		const expectedResult = "test_scope: test error -> test fmt_arg1 fmt_arg2, [func5]"
 
-		err := Errorf(errors.New("test error"), "test %s", "arg")
-		if err.Error() != expectedResult {
-			t.Errorf("error text not equal with expected. current: %s, expected: %s",
-				err.Error(), expectedResult)
-		}
-	})
-
-	t.Run("error no wrap", func(t *testing.T) {
-		const expectedResult = "test error"
-		var errExpected = errors.New(expectedResult)
-
-		err := ErrorNoWrap(errExpected)
-		if !errors.Is(err, errExpected) {
-			t.Errorf("error not equal with expected %s, %s", err.Error(), errExpected.Error())
-		}
-
+		err := ScopedErrorf(errors.New("test error"), "test_scope", "test %s %s",
+			"fmt_arg1", "fmt_arg2")
 		if err.Error() != expectedResult {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
 				err.Error(), expectedResult)
