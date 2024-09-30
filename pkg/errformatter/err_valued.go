@@ -40,7 +40,7 @@ import (
 
 type valuedError struct {
 	Err     error
-	values  [...]Value
+	values  []Value
 	settled Bits
 }
 
@@ -139,7 +139,7 @@ func ValuedErrorOnly(err error, value Value) *valuedError {
 		return vErr.setValue(value)
 	}
 
-	vErr.values = make([...]Value, 0, len(kindStrings)-1)
+	vErr.values = make([]Value, 0, len(kindStrings)-1)
 	vErr.Err = nil
 	vErr.settled = 0
 
@@ -157,7 +157,7 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 		return vErr.setValues(value...)
 	}
 
-	vErr.values = make([...]Value, 0, len(kindStrings)-1)
+	vErr.values = make([]Value, 0, len(kindStrings)-1)
 	vErr.Err = nil
 	vErr.settled = 0
 
@@ -182,7 +182,7 @@ func ValuedErrorf(err error, values []Value, format string, args ...interface{})
 
 	var vErr = valuedError{
 		Err:     ErrorOnly(err, fmt.Sprintf(format, args...), getFuncName()),
-		values:  make([...]Value, 0, len(kindStrings)-1),
+		values:  make([]Value, 0, len(kindStrings)-1),
 		settled: 0,
 	}
 
@@ -207,7 +207,7 @@ func ValuedNewErrorf(format string, args ...interface{}) *valuedError {
 		Err: fmt.Errorf("%s",
 			strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
 		),
-		values:  make([...]Value, 0, len(kindStrings)-1),
+		values:  make([]Value, 0, len(kindStrings)-1),
 		settled: 0,
 	}
 }
