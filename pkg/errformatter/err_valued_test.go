@@ -101,4 +101,35 @@ func TestValuedErrorFormatting(t *testing.T) {
 				err.Error(), expectedResult)
 		}
 	})
+
+	t.Run("valued error with code - 3 fmt args and func", func(t *testing.T) {
+		const (
+			expectedCode   = 4
+			expectedResult = "valued_err_scope: test error -> valued_err_detail_1, valued_err_detail_2"
+		)
+
+		err := MultiValuedErrorOnly(errors.New("test error"),
+			Value{
+				num: KindCode, any: 100500,
+			},
+			Value{
+				num: KindScope, any: "valued_err_scope",
+			},
+			Value{
+				num: KindDetails, any: []string{
+					"valued_err_detail_1",
+					"valued_err_detail_2",
+				},
+			},
+		)
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		if code := err.getCode(); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+	})
 }
