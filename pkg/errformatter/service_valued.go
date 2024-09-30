@@ -34,8 +34,7 @@ package errformatter
 
 var _ selfService = (*serviceValued)(nil)
 
-type serviceValued struct {
-}
+type serviceValued struct{}
 
 func (s *serviceValued) ErrGetCode(err error) int {
 	return s.ErrorGetCode(err)

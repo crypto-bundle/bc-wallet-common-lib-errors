@@ -40,7 +40,7 @@ import (
 
 type valuedError struct {
 	Err     error
-	values  []Value
+	values  [MaxKindValue]Value
 	settled Bits
 }
 
@@ -106,6 +106,7 @@ func (e *valuedError) setError(err error) *valuedError {
 
 func ValuedErrorGetCode(err error) int {
 	var vErr valuedError
+
 	if !errors.As(err, &vErr) {
 		return ValueMissing
 	}
@@ -124,10 +125,6 @@ func ValuedErrorOnly(err error, value Value) *valuedError {
 		return vErr.setValue(value)
 	}
 
-	vErr.values = make([]Value, kindCount)
-	vErr.Err = nil
-	vErr.settled = 0
-
 	return vErr.setValue(value).setError(err)
 }
 
@@ -141,10 +138,6 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 	if errors.As(err, &vErr) {
 		return vErr.setValues(value...)
 	}
-
-	vErr.values = make([]Value, kindCount)
-	vErr.Err = nil
-	vErr.settled = 0
 
 	return vErr.setValues(value...).setError(err)
 }
@@ -169,15 +162,13 @@ func ValuedErrorf(err error,
 		return nil
 	}
 
-	var vErr = valuedError{
-		Err:     ErrorOnly(err, fmt.Sprintf(format, args...), getFuncName()),
-		values:  make([]Value, 0, len(kindStrings)-1),
-		settled: 0,
-	}
+	var vErr valuedError
 
 	if errors.As(err, &vErr) {
-		_ = vErr.setValues(values...)
+		return vErr.setValues(values...)
 	}
+
+	vErr.Err = ErrorOnly(err, fmt.Sprintf(format, args...), getFuncName())
 
 	return &vErr
 }
@@ -186,11 +177,9 @@ func ValuedErrorf(err error,
 func ValuedNewError(values []Value, details ...string) *valuedError {
 	details = append(details, getFuncName())
 
-	vErr := &valuedError{
-		Err:     fmt.Errorf("%s", strings.Join(details, ", ")),
-		values:  make([]Value, kindCount),
-		settled: 0,
-	}
+	var vErr valuedError
+
+	vErr.Err = fmt.Errorf("%s", strings.Join(details, ", "))
 
 	return vErr.setValues(append(values, Value{
 		num: KindDetails,
@@ -200,13 +189,11 @@ func ValuedNewError(values []Value, details ...string) *valuedError {
 
 // ValuedNewErrorf combines given error with details and finishes with caller func name, printf formatting...
 func ValuedNewErrorf(values []Value, format string, args ...interface{}) *valuedError {
-	vErr := &valuedError{
-		Err: fmt.Errorf("%s",
-			strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
-		),
-		values:  make([]Value, kindCount),
-		settled: 0,
-	}
+	var vErr valuedError
+
+	vErr.Err = fmt.Errorf("%s",
+		strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
+	)
 
 	return vErr.setValues(values...)
 }

@@ -32,8 +32,6 @@
 
 package errformatter
 
-import "errors"
-
 type Bits uint8
 
 const (
@@ -82,6 +80,10 @@ const (
 	KindScope
 	KindCode
 	KindPublicCode
+	// MaxKindValue - used as size of array of Value. !!!PLZ do not touch this constant.
+	// This constant must be last in order of Kind constants.
+	// Usage example in `valuedError` struct...
+	MaxKindValue = iota - 1
 )
 
 func (k Kind) Bits() Bits {
@@ -100,16 +102,3 @@ func (k Kind) Bits() Bits {
 		return 0
 	}
 }
-
-var kindStrings = []string{
-	"Empty",
-	"Details",
-	"Scope",
-	"Code",
-	"PublicCode",
-}
-
-var (
-	emptyErr  = errors.New("")
-	kindCount = len(kindStrings) - 1
-)
