@@ -69,7 +69,7 @@ func TestValuedErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("valued error only - error with scope and details values with func name", func(t *testing.T) {
-		const expectedResult = "valued_err_scope: test error -> abcd, efg, [TestValuedErrorFormatting.func3]"
+		const expectedResult = "valued_err_scope: test error -> abcd, efg"
 
 		err := ValuedError(errors.New("test error"), []Value{
 			{
@@ -84,7 +84,7 @@ func TestValuedErrorFormatting(t *testing.T) {
 
 	t.Run("new valued error - 1 value 2 details args and func", func(t *testing.T) {
 		const (
-			expectedResult = "error detail, error detail2, [TestValuedErrorFormatting.func4]"
+			expectedResult = "error detail, error detail2"
 			expectedCode   = 4
 		)
 
@@ -111,7 +111,7 @@ func TestValuedErrorFormatting(t *testing.T) {
 
 	t.Run("new valued formatted error - 3 fmt args and func", func(t *testing.T) {
 		const (
-			expectedResult = "err: fmt_arg1 fmt_arg2 100500, [TestValuedErrorFormatting.func5]"
+			expectedResult = "err: fmt_arg1 fmt_arg2 100500"
 			expectedCode   = 4
 		)
 

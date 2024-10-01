@@ -33,70 +33,84 @@
 package errformatter
 
 import (
-	"fmt"
-	"runtime"
-	"strings"
+	"testing"
 )
 
-func ErrorNoWrap(err error) error {
-	if err == nil {
-		return nil
-	}
+func TestServiceValuedWithDefaults_NewError(t *testing.T) {
+	runName1 := "valued error - error with 3 scope values for overwrite and details value for overwrite"
+	t.Run(runName1, func(t *testing.T) {
+		var (
+			expectedResult = "valued_err_scope: some error text -> " +
+				"err_detail_true_1, err_detail_true_2"
+		)
 
-	return err
-}
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "wrong_err_scope_for_overwrite",
+			},
+			{
+				num: KindScope,
+				any: "wrong_err_scope_2_for_overwrite",
+			},
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindDetails,
+				any: []string{"err_detail_true_1", "err_detail_true_2"},
+			},
+		}...)
 
-// ErrorOnly combines given error with details, WITHOUT function name...
-func ErrorOnly(err error, details ...string) error {
-	if err == nil {
-		return nil
-	}
+		err := svc.NewError("some error text")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
 
-	if len(details) == 0 {
-		return err
-	}
+	runName2 := "valued error - error with one scope value, one details value and one code value"
+	t.Run(runName2, func(t *testing.T) {
+		var (
+			expectedResult = "valued_err_scope: detail_info_as_value_1, detail_info_as_value_2 -> " +
+				"detail_in_value_1, detail_in_value_2"
+			expectedCode = 9999
+		)
 
-	return fmt.Errorf("%w -> %s", err, strings.Join(details, ", "))
-}
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindDetails,
+				any: []string{"detail_in_value_1", "detail_in_value_2"},
+			},
+			{
+				num: KindCode,
+				any: 100503,
+			},
+			{
+				num: KindCode,
+				any: expectedCode,
+			},
+		}...)
 
-// Error combines given error with details and finishes with caller func name...
-func Error(err error, details ...string) error {
-	return ErrorOnly(err, details...)
-}
+		err := svc.NewError("detail_info_as_value_1", "detail_info_as_value_2")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
 
-// NewError returns error by combining given details and finishes with caller func name...
-//
-//nolint:err113
-func NewError(details ...string) error {
-	return fmt.Errorf("%s", strings.Join(details, ", "))
-}
+		if code := svc.ErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
 
-// NewErrorf returns error by combining given details and finishes with caller func name, printf formatting...
-//
-//nolint:err113
-func NewErrorf(format string, args ...interface{}) error {
-	return fmt.Errorf(
-		"%s",
-		strings.Join([]string{fmt.Sprintf(format, args...)}, ", "),
-	)
-}
-
-// Errorf combines given error with details and finishes with caller func name, printf formatting...
-func Errorf(err error, format string, args ...interface{}) error {
-	return ErrorOnly(err, fmt.Sprintf(format, args...))
-}
-
-func getFuncName() string {
-	pc, file, _, ok := runtime.Caller(CallerStackSkip)
-
-	funcName := file
-
-	details := runtime.FuncForPC(pc)
-	if ok && details != nil {
-		funcNameParts := strings.Split(details.Name(), ".")
-		funcName = fmt.Sprintf("[%s.%s]",
-			funcNameParts[len(funcNameParts)-2], funcNameParts[len(funcNameParts)-1])
-	}
-
-	return funcName
+		if code := ValuedErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+	})
 }

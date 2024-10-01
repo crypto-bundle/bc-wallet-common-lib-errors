@@ -49,9 +49,9 @@ func TestErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("common error", func(t *testing.T) {
-		const expectedResult = "test error -> [TestErrorFormatting.func2]"
+		const expectedResult = "test error -> efg"
 
-		err := Error(errors.New("test error"))
+		err := Error(errors.New("test error"), "efg")
 		if err.Error() != expectedResult {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
 				err.Error(), expectedResult)
@@ -59,9 +59,9 @@ func TestErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("new error", func(t *testing.T) {
-		const expectedResult = "test, error, [TestErrorFormatting.func3]"
+		const expectedResult = "test, error - some text"
 
-		err := NewError("test", "error")
+		err := NewError("test", "error - some text")
 		if err.Error() != expectedResult {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
 				err.Error(), expectedResult)
@@ -69,9 +69,9 @@ func TestErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("new errorf", func(t *testing.T) {
-		const expectedResult = "test arg, [TestErrorFormatting.func4]"
+		const expectedResult = "test arg - with value 100500"
 
-		err := NewErrorf("test %s", "arg")
+		err := NewErrorf("test %s - with value %d", "arg", 100500)
 		if err.Error() != expectedResult {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
 				err.Error(), expectedResult)
@@ -79,7 +79,7 @@ func TestErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("common errorf", func(t *testing.T) {
-		const expectedResult = "test error -> test arg, [TestErrorFormatting.func5]"
+		const expectedResult = "test error -> test arg"
 
 		err := Errorf(errors.New("test error"), "test %s", "arg")
 		if err.Error() != expectedResult {

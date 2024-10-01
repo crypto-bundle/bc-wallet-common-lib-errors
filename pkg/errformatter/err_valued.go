@@ -99,6 +99,8 @@ func (e *valuedError) setError(err error) *valuedError {
 		scope := e.values[KindScope].any.(string)
 
 		e.Err = fmt.Errorf("%s: %w", scope, err)
+	default:
+		e.Err = fmt.Errorf("%w", err)
 	}
 
 	return e
@@ -146,7 +148,7 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 func ValuedError(err error, values []Value, details ...string) *valuedError {
 	values = append(values, Value{
 		num: KindDetails,
-		any: append(details, getFuncName()),
+		any: details,
 	})
 
 	return MultiValuedErrorOnly(err, values...).setError(err)
@@ -168,32 +170,27 @@ func ValuedErrorf(err error,
 		return vErr.setValues(values...)
 	}
 
-	vErr.Err = ErrorOnly(err, fmt.Sprintf(format, args...), getFuncName())
+	vErr.Err = ErrorOnly(err, fmt.Sprintf(format, args...))
 
 	return vErr.setValues(values...)
 }
 
 // ValuedNewError combines given error with details and finishes with caller func name, printf formatting...
 func ValuedNewError(values []Value, details ...string) *valuedError {
-	details = append(details, getFuncName())
-
 	var vErr valuedError
 
-	vErr.Err = fmt.Errorf("%s", strings.Join(details, ", "))
+	newErr := fmt.Errorf("%s", strings.Join(details, ", "))
 
-	return vErr.setValues(append(values, Value{
-		num: KindDetails,
-		any: details,
-	})...)
+	return vErr.setValues(values...).setError(newErr)
 }
 
 // ValuedNewErrorf combines given error with details and finishes with caller func name, printf formatting...
 func ValuedNewErrorf(values []Value, format string, args ...interface{}) *valuedError {
 	var vErr valuedError
 
-	vErr.Err = fmt.Errorf("%s",
-		strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
+	newErr := fmt.Errorf("%s",
+		strings.Join([]string{fmt.Sprintf(format, args...)}, ", "),
 	)
 
-	return vErr.setValues(values...)
+	return vErr.setValues(values...).setError(newErr)
 }

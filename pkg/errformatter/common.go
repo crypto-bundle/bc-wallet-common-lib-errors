@@ -42,6 +42,7 @@ type selfService interface {
 	// ErrNoWrap same with ErrorNoWrap function, just alias for ErrorNoWrap, just short function name...
 	ErrNoWrap(err error) error
 	ErrorOnly(err error, details ...string) error
+	Error(err error, details ...string) error
 	Errorf(err error, format string, args ...interface{}) error
 	NewError(details ...string) error
 	NewErrorf(format string, args ...interface{}) error

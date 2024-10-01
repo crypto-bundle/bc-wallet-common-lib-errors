@@ -49,7 +49,7 @@ func TestScopedErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("scoped error - details and func", func(t *testing.T) {
-		const expectedResult = "test_scope: test error -> abcd, efg, [TestScopedErrorFormatting.func2]"
+		const expectedResult = "test_scope: test error -> abcd, efg"
 
 		err := ScopedError(errors.New("test error"), "test_scope", "abcd", "efg")
 		if err.Error() != expectedResult {
@@ -59,7 +59,7 @@ func TestScopedErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("new scoped error - 2 details args and func", func(t *testing.T) {
-		const expectedResult = "test_scope: error detail, error detail2, [TestScopedErrorFormatting.func3]"
+		const expectedResult = "test_scope: error detail, error detail2"
 
 		err := NewScopedError("test_scope", "error detail", "error detail2")
 		if err.Error() != expectedResult {
@@ -69,7 +69,7 @@ func TestScopedErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("new scoped formatted error - 2 fmt args and func", func(t *testing.T) {
-		const expectedResult = "test_scope: test fmt_arg1 fmt_arg2, [TestScopedErrorFormatting.func4]"
+		const expectedResult = "test_scope: test fmt_arg1 fmt_arg2"
 
 		err := NewScopedErrorf("test %s %s", "test_scope", "fmt_arg1", "fmt_arg2")
 		if err.Error() != expectedResult {
@@ -79,7 +79,7 @@ func TestScopedErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("scoped formatted error - two fmt args and func name", func(t *testing.T) {
-		const expectedResult = "test_scope: test error -> test fmt_arg1 fmt_arg2, [TestScopedErrorFormatting.func5]"
+		const expectedResult = "test_scope: test error -> test fmt_arg1 fmt_arg2"
 
 		err := ScopedErrorf(errors.New("test error"), "test_scope", "test %s %s",
 			"fmt_arg1", "fmt_arg2")

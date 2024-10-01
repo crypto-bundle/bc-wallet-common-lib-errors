@@ -77,7 +77,7 @@ func ScopedErrorOnly(err error, scope string, details ...string) *scopedError {
 
 // ScopedError combines given error with details and finishes with caller func name...
 func ScopedError(err error, scope string, details ...string) *scopedError {
-	return ScopedErrorOnly(err, scope, append(details, getFuncName())...)
+	return ScopedErrorOnly(err, scope, details...)
 }
 
 // NewScopedError returns error by combining given details and finishes with caller func name...
@@ -86,7 +86,7 @@ func ScopedError(err error, scope string, details ...string) *scopedError {
 func NewScopedError(scope string, details ...string) *scopedError {
 	return &scopedError{
 		Err: fmt.Errorf("%s: %s", scope,
-			strings.Join(append(details, getFuncName()), ", ")),
+			strings.Join(append(details), ", ")),
 		scope: scope,
 	}
 }
@@ -98,7 +98,7 @@ func NewScopedErrorf(format string, scope string, args ...interface{}) *scopedEr
 	return &scopedError{
 		Err: fmt.Errorf(
 			"%s: %s", scope,
-			strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
+			strings.Join([]string{fmt.Sprintf(format, args...)}, ", "),
 		),
 		scope: scope,
 	}
@@ -109,5 +109,5 @@ func ScopedErrorf(err error, scope string,
 	format string,
 	args ...interface{},
 ) *scopedError {
-	return ScopedErrorOnly(err, scope, fmt.Sprintf(format, args...), getFuncName())
+	return ScopedErrorOnly(err, scope, fmt.Sprintf(format, args...))
 }
