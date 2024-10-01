@@ -68,7 +68,7 @@ type Value struct {
 	any any
 }
 
-// Kind is the kind of a [Value].
+// Kind is the kind of [Value].
 type Kind uint
 
 // The following list is sorted alphabetically, but it's also important that

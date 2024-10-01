@@ -49,7 +49,7 @@ func TestErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("common error", func(t *testing.T) {
-		const expectedResult = "test error -> [func2]"
+		const expectedResult = "test error -> [TestErrorFormatting.func2]"
 
 		err := Error(errors.New("test error"))
 		if err.Error() != expectedResult {
@@ -59,7 +59,7 @@ func TestErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("new error", func(t *testing.T) {
-		const expectedResult = "test, error, [func3]"
+		const expectedResult = "test, error, [TestErrorFormatting.func3]"
 
 		err := NewError("test", "error")
 		if err.Error() != expectedResult {
@@ -69,7 +69,7 @@ func TestErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("new errorf", func(t *testing.T) {
-		const expectedResult = "test arg, [func4]"
+		const expectedResult = "test arg, [TestErrorFormatting.func4]"
 
 		err := NewErrorf("test %s", "arg")
 		if err.Error() != expectedResult {
@@ -79,7 +79,7 @@ func TestErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("common errorf", func(t *testing.T) {
-		const expectedResult = "test error -> test arg, [func5]"
+		const expectedResult = "test error -> test arg, [TestErrorFormatting.func5]"
 
 		err := Errorf(errors.New("test error"), "test %s", "arg")
 		if err.Error() != expectedResult {

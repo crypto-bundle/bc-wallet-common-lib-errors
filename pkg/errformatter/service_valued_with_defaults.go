@@ -48,20 +48,31 @@ func (s *serviceValuedWithDefaults) ErrorWithCode(err error, code int) error {
 		panic("errfmt: code must be positive value")
 	}
 
-	return ValuedErrorOnly(err, Value{
-		num: KindCode,
-		any: code,
-	})
-}
-
-func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) error {
 	count := len(s.defaultValues)
 
 	valuesList := make([]Value, count+1)
 	copy(valuesList, s.defaultValues)
-	valuesList[count+1] = Value{
-		num: KindDetails,
-		any: details,
+	valuesList[count] = Value{
+		num: KindCode,
+		any: code,
+	}
+
+	return MultiValuedErrorOnly(err, valuesList...)
+}
+
+func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) error {
+	count := len(s.defaultValues)
+	detailsCount := len(details)
+
+	valuesList := make([]Value, count+detailsCount)
+
+	copy(valuesList[:count], s.defaultValues)
+
+	if len(details) > 0 {
+		valuesList[count] = Value{
+			num: KindDetails,
+			any: details,
+		}
 	}
 
 	return MultiValuedErrorOnly(err, valuesList...)

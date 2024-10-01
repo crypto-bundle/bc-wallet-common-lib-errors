@@ -94,7 +94,8 @@ func getFuncName() string {
 	details := runtime.FuncForPC(pc)
 	if ok && details != nil {
 		funcNameParts := strings.Split(details.Name(), ".")
-		funcName = "[" + funcNameParts[len(funcNameParts)-1] + "]"
+		funcName = fmt.Sprintf("[%s.%s]",
+			funcNameParts[len(funcNameParts)-2], funcNameParts[len(funcNameParts)-1])
 	}
 
 	return funcName

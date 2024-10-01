@@ -31,3 +31,286 @@
  */
 
 package errformatter
+
+import (
+	"errors"
+	"testing"
+)
+
+func TestServiceValuedWithDefaults(t *testing.T) {
+	t.Run("service valued error only - error with scope value and two details", func(t *testing.T) {
+		const (
+			expectedResult = "valued_err_scope: test error -> detail_1, detail_2"
+			expectedCode   = 404
+		)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindCode,
+				any: expectedCode,
+			},
+		}...)
+
+		err := svc.ErrorOnly(errors.New("test error"), "detail_1", "detail_2")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		if code := svc.ErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+
+		if code := ValuedErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+	})
+
+	t.Run("service valued error with code - error with scope value and code value rewrite", func(t *testing.T) {
+		const (
+			expectedResult = "valued_err_scope: test error"
+			expectedCode   = 404
+		)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindCode,
+				any: 100500,
+			},
+		}...)
+
+		err := svc.ErrorWithCode(errors.New("test error"), expectedCode)
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		if code := svc.ErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+
+		if code := ValuedErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+	})
+
+	t.Run("service valued error with code - error with scope value, details value and code value rewrite", func(t *testing.T) {
+		const (
+			expectedResult = "valued_err_scope: test error -> detail_1, detail_2"
+			expectedCode   = 404
+		)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindCode,
+				any: 100500,
+			},
+			{
+				num: KindDetails,
+				any: []string{"detail_1", "detail_2"},
+			},
+		}...)
+
+		err := svc.ErrorWithCode(errors.New("test error"), expectedCode)
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		if code := svc.ErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+
+		if code := ValuedErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+	})
+}
+
+func TestServiceValuedWithDefaults_ErrorOnly(t *testing.T) {
+	t.Run("service valued error only - error with 2 scope values for overwrite", func(t *testing.T) {
+		const (
+			expectedResult      = "valued_err_scope: test error"
+			expectedTextForWrap = "test error"
+		)
+		var errorForWrap = errors.New(expectedTextForWrap)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "wrong_err_scope",
+			},
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+		}...)
+
+		err := svc.ErrorOnly(errorForWrap)
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		unwrappedErr := errors.Unwrap(err)
+
+		if !errors.Is(unwrappedErr, errorForWrap) {
+			t.Errorf("error text not equal with expected. current: %e, expected: %e",
+				unwrappedErr, errorForWrap)
+		}
+
+		if unwrappedErr.Error() != expectedTextForWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				unwrappedErr.Error(), expectedTextForWrap)
+		}
+	})
+
+	t.Run("service valued error only - error with 2 scope values for overwrite", func(t *testing.T) {
+		const (
+			expectedResult      = "valued_err_scope: test error -> details_for_overwrite_1, details_for_overwrite_2"
+			expectedTextForWrap = "test error"
+		)
+		var errorForWrap = errors.New(expectedTextForWrap)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindDetails,
+				any: []string{"detail_info_as_value_1", "detail_info_as_value_2", "detail_info_as_value_2"},
+			},
+		}...)
+
+		err := svc.ErrorOnly(errorForWrap, "details_for_overwrite_1", "details_for_overwrite_2")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		unwrappedErr := errors.Unwrap(err)
+
+		if !errors.Is(unwrappedErr, errorForWrap) {
+			t.Errorf("error text not equal with expected. current: %e, expected: %e",
+				unwrappedErr, errorForWrap)
+		}
+
+		if unwrappedErr.Error() != expectedTextForWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				unwrappedErr.Error(), expectedTextForWrap)
+		}
+	})
+}
+
+func TestServiceValuedWithDefaults_Errorf(t *testing.T) {
+	t.Run("service valued errorf - formatted error with kindCode value", func(t *testing.T) {
+		const (
+			expectedCode        = 404
+			expectedResult      = "test error -> 100501 is error value, [(*serviceValuedWithDefaults).Errorf]"
+			expectedTextForWrap = "test error"
+		)
+		var errorForWrap = errors.New(expectedTextForWrap)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindCode,
+				any: expectedCode,
+			},
+		}...)
+
+		err := svc.Errorf(errorForWrap, "%d %s", 100501, "is error value")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		unwrappedErr := errors.Unwrap(err)
+
+		if !errors.Is(unwrappedErr, errorForWrap) {
+			t.Errorf("error text not equal with expected. current: %e, expected: %e",
+				unwrappedErr, errorForWrap)
+		}
+
+		if unwrappedErr.Error() != expectedTextForWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				unwrappedErr.Error(), expectedTextForWrap)
+		}
+
+		if code := svc.ErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+
+		if code := ValuedErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+	})
+
+	t.Run("service valued errorf - formatted error with 2 kindCode values for overwrite", func(t *testing.T) {
+		const (
+			expectedCode        = 404
+			expectedResult      = "test error -> 100502 is error value, [(*serviceValuedWithDefaults).Errorf]"
+			expectedTextForWrap = "test error"
+		)
+		var errorForWrap = errors.New(expectedTextForWrap)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindCode,
+				any: 100555,
+			},
+			{
+				num: KindCode,
+				any: expectedCode,
+			},
+		}...)
+
+		err := svc.Errorf(errorForWrap, "%d %s", 100502, "is error value")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		unwrappedErr := errors.Unwrap(err)
+
+		if !errors.Is(unwrappedErr, errorForWrap) {
+			t.Errorf("error text not equal with expected. current: %e, expected: %e",
+				unwrappedErr, errorForWrap)
+		}
+
+		if unwrappedErr.Error() != expectedTextForWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				unwrappedErr.Error(), expectedTextForWrap)
+		}
+
+		if code := svc.ErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+
+		if code := ValuedErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+	})
+}

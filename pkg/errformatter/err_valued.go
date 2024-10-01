@@ -105,7 +105,7 @@ func (e *valuedError) setError(err error) *valuedError {
 }
 
 func ValuedErrorGetCode(err error) int {
-	var vErr valuedError
+	var vErr *valuedError
 
 	if !errors.As(err, &vErr) {
 		return ValueMissing
@@ -170,7 +170,7 @@ func ValuedErrorf(err error,
 
 	vErr.Err = ErrorOnly(err, fmt.Sprintf(format, args...), getFuncName())
 
-	return &vErr
+	return vErr.setValues(values...)
 }
 
 // ValuedNewError combines given error with details and finishes with caller func name, printf formatting...
