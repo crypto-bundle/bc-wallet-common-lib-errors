@@ -1,6 +1,6 @@
 # Change Log
 
-## [v0.0.6] - 30.09.2024
+## [v0.0.6] - 02.09.2024
 ### Added
 * Added value based error format service component, currently support next kind of values:
   * KindDetails
