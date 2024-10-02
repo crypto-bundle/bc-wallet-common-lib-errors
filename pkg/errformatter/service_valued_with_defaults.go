@@ -32,19 +32,81 @@
 
 package errformatter
 
-//nolint:interfacebloat //it's ok here, we need it we must use it as one big interface
-type selfService interface {
-	ErrorWithCode(err error, code int) error
-	ErrWithCode(err error, code int) error
-	ErrorGetCode(err error) int
-	ErrGetCode(err error) int
-	// ErrorNoWrap function for pseudo-wrap error, must be used in case of linter warnings...
-	ErrorNoWrap(err error) error
-	// ErrNoWrap same with ErrorNoWrap function, just alias for ErrorNoWrap, just short function name...
-	ErrNoWrap(err error) error
-	ErrorOnly(err error, details ...string) error
-	Error(err error, details ...string) error
-	Errorf(err error, format string, args ...interface{}) error
-	NewError(details ...string) error
-	NewErrorf(format string, args ...interface{}) error
+var _ selfService = (*serviceValuedWithDefaults)(nil)
+
+type serviceValuedWithDefaults struct {
+	*serviceValued
+	defaultValues []Value
+}
+
+func (s *serviceValuedWithDefaults) ErrWithCode(err error, code int) error {
+	return s.ErrorWithCode(err, code)
+}
+
+func (s *serviceValuedWithDefaults) ErrorWithCode(err error, code int) error {
+	if code <= 0 {
+		panic("errfmt: code must be positive value")
+	}
+
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count+1)
+	copy(valuesList, s.defaultValues)
+	valuesList[count] = NewValue(KindCode, code)
+
+	return MultiValuedErrorOnly(err, valuesList...)
+}
+
+func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) error {
+	count := len(s.defaultValues)
+	detailsCount := len(details)
+
+	valuesList := make([]Value, count+detailsCount)
+
+	copy(valuesList[:count], s.defaultValues)
+
+	if len(details) > 0 {
+		valuesList[count] = NewValue(KindDetails, details)
+	}
+
+	return MultiValuedErrorOnly(err, valuesList...)
+}
+
+func (s *serviceValuedWithDefaults) Error(err error, details ...string) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedError(err, valuesList, details...)
+}
+
+func (s *serviceValuedWithDefaults) Errorf(err error,
+	format string,
+	args ...interface{},
+) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedErrorf(err, valuesList, format, args...)
+}
+
+func (s *serviceValuedWithDefaults) NewError(details ...string) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedNewError(valuesList, details...)
+}
+
+func (s *serviceValuedWithDefaults) NewErrorf(format string, args ...interface{}) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedNewErrorf(valuesList, format, args...)
 }

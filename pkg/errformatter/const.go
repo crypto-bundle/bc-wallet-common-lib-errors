@@ -32,4 +32,7 @@
 
 package errformatter
 
-const CallerStackSkip = 2
+const (
+	CallerStackSkip  = 2
+	ValueCodeMissing = -1
+)

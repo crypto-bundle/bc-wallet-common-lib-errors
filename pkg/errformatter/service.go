@@ -32,17 +32,34 @@
 
 package errformatter
 
-var (
-	_ selfService = (*service)(nil)
-	_ selfService = (*serviceScoped)(nil)
-)
+var _ selfService = (*service)(nil)
 
 //nolint:gofumpt
 type service struct {
 }
 
+func (s *service) ErrGetCode(err error) int {
+	return s.ErrorGetCode(err)
+}
+
+func (s *service) ErrorGetCode(err error) int {
+	return ValuedErrorGetCode(err)
+}
+
+func (s *service) ErrWithCode(err error, code int) error {
+	return s.ErrorWithCode(err, code)
+}
+
+func (s *service) ErrorWithCode(err error, code int) error {
+	if code <= 0 {
+		panic("errfmt: code must be positive value")
+	}
+
+	return ValuedErrorOnly(err, NewValue(KindCode, code))
+}
+
 func (s *service) ErrNoWrap(err error) error {
-	return ErrorNoWrap(err)
+	return s.ErrorNoWrap(err)
 }
 
 func (s *service) ErrorNoWrap(err error) error {
@@ -71,42 +88,4 @@ func (s *service) NewErrorf(format string, args ...interface{}) error {
 
 func NewErrorFormatter() *service {
 	return &service{}
-}
-
-type serviceScoped struct {
-	scope string
-}
-
-func (s *serviceScoped) ErrNoWrap(err error) error {
-	return ErrorNoWrap(err)
-}
-
-func (s *serviceScoped) ErrorNoWrap(err error) error {
-	return ErrorNoWrap(err)
-}
-
-func (s *serviceScoped) ErrorOnly(err error, details ...string) error {
-	return ScopedErrorOnly(err, s.scope, details...)
-}
-
-func (s *serviceScoped) Error(err error, details ...string) error {
-	return ScopedError(err, s.scope, details...)
-}
-
-func (s *serviceScoped) Errorf(err error, format string, args ...interface{}) error {
-	return ScopedErrorf(err, s.scope, format, args...)
-}
-
-func (s *serviceScoped) NewError(details ...string) error {
-	return NewScopedError(s.scope, details...)
-}
-
-func (s *serviceScoped) NewErrorf(format string, args ...interface{}) error {
-	return NewScopedErrorf(format, s.scope, args...)
-}
-
-func NewScopedErrorFormatter(scope string) *serviceScoped {
-	return &serviceScoped{
-		scope: scope,
-	}
 }

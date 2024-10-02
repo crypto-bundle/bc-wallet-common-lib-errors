@@ -32,70 +32,64 @@
 
 package errformatter
 
-import (
-	"fmt"
-	"runtime"
-	"strings"
-)
+var _ selfService = (*serviceScoped)(nil)
 
-func ErrorNoWrap(err error) error {
-	if err == nil {
-		return nil
+type serviceScoped struct {
+	scope string
+}
+
+func (s *serviceScoped) ErrGetCode(err error) int {
+	return s.ErrorGetCode(err)
+}
+
+func (s *serviceScoped) ErrorGetCode(err error) int {
+	return ValuedErrorGetCode(err)
+}
+
+func (s *serviceScoped) ErrWithCode(err error, code int) error {
+	return s.ErrorWithCode(err, code)
+}
+
+func (s *serviceScoped) ErrorWithCode(err error, code int) error {
+	if code <= 0 {
+		panic("errfmt: code must be positive value")
 	}
 
-	return err
+	return MultiValuedErrorOnly(err,
+		NewValue(KindCode, code),
+		NewValue(KindScope, s.scope))
 }
 
-// ErrorOnly combines given error with details, WITHOUT function name...
-func ErrorOnly(err error, details ...string) error {
-	if err == nil {
-		return nil
+func (s *serviceScoped) ErrNoWrap(err error) error {
+	return ErrorNoWrap(err)
+}
+
+func (s *serviceScoped) ErrorNoWrap(err error) error {
+	return ErrorNoWrap(err)
+}
+
+func (s *serviceScoped) ErrorOnly(err error, details ...string) error {
+	return ScopedErrorOnly(err, s.scope, details...)
+}
+
+func (s *serviceScoped) Error(err error, details ...string) error {
+	return ScopedError(err, s.scope, details...)
+}
+
+func (s *serviceScoped) Errorf(err error, format string, args ...interface{}) error {
+	return ScopedErrorf(err, s.scope, format, args...)
+}
+
+func (s *serviceScoped) NewError(details ...string) error {
+	return NewScopedError(s.scope, details...)
+}
+
+func (s *serviceScoped) NewErrorf(format string, args ...interface{}) error {
+	return NewScopedErrorf(format, s.scope, args...)
+}
+
+func NewScopedErrorFormatter(scope string) *serviceScoped {
+	return &serviceScoped{
+		scope: scope,
 	}
-
-	if len(details) == 0 {
-		return err
-	}
-
-	return fmt.Errorf("%w -> %s", err, strings.Join(details, ", "))
-}
-
-// Error combines given error with details and finishes with caller func name...
-func Error(err error, details ...string) error {
-	return ErrorOnly(err, append(details, getFuncName())...)
-}
-
-// NewError returns error by combining given details and finishes with caller func name...
-//
-//nolint:err113
-func NewError(details ...string) error {
-	return fmt.Errorf("%s", strings.Join(append(details, getFuncName()), ", "))
-}
-
-// NewErrorf returns error by combining given details and finishes with caller func name, printf formatting...
-//
-//nolint:err113
-func NewErrorf(format string, args ...interface{}) error {
-	return fmt.Errorf(
-		"%s",
-		strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
-	)
-}
-
-// Errorf combines given error with details and finishes with caller func name, printf formatting...
-func Errorf(err error, format string, args ...interface{}) error {
-	return ErrorOnly(err, fmt.Sprintf(format, args...), getFuncName())
-}
-
-func getFuncName() string {
-	pc, file, _, ok := runtime.Caller(CallerStackSkip)
-
-	funcName := file
-
-	details := runtime.FuncForPC(pc)
-	if ok && details != nil {
-		funcNameParts := strings.Split(details.Name(), ".")
-		funcName = "[" + funcNameParts[len(funcNameParts)-1] + "]"
-	}
-
-	return funcName
 }

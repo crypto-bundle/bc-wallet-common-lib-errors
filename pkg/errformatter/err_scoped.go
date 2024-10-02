@@ -32,19 +32,82 @@
 
 package errformatter
 
-//nolint:interfacebloat //it's ok here, we need it we must use it as one big interface
-type selfService interface {
-	ErrorWithCode(err error, code int) error
-	ErrWithCode(err error, code int) error
-	ErrorGetCode(err error) int
-	ErrGetCode(err error) int
-	// ErrorNoWrap function for pseudo-wrap error, must be used in case of linter warnings...
-	ErrorNoWrap(err error) error
-	// ErrNoWrap same with ErrorNoWrap function, just alias for ErrorNoWrap, just short function name...
-	ErrNoWrap(err error) error
-	ErrorOnly(err error, details ...string) error
-	Error(err error, details ...string) error
-	Errorf(err error, format string, args ...interface{}) error
-	NewError(details ...string) error
-	NewErrorf(format string, args ...interface{}) error
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// ErrorScoped its type just for backward compatibility...
+type ErrorScoped scopedError
+
+type scopedError struct {
+	Err   error
+	scope string
+}
+
+// Error to string converter...
+func (e scopedError) Error() string {
+	return e.Err.Error()
+}
+
+// Unwrap returns previous error...
+func (e scopedError) Unwrap() error {
+	return errors.Unwrap(e.Err)
+}
+
+// ScopedErrorOnly combines given error with details, WITHOUT function name...
+func ScopedErrorOnly(err error, scope string, details ...string) *scopedError {
+	if err == nil {
+		return nil
+	}
+
+	if len(details) == 0 {
+		return &scopedError{
+			scope: scope,
+			Err:   fmt.Errorf("%s: %w", scope, err),
+		}
+	}
+
+	return &scopedError{
+		scope: scope,
+		Err:   fmt.Errorf("%s: %w -> %s", scope, err, strings.Join(details, ", ")),
+	}
+}
+
+// ScopedError combines given error with details and finishes with caller func name...
+func ScopedError(err error, scope string, details ...string) *scopedError {
+	return ScopedErrorOnly(err, scope, details...)
+}
+
+// NewScopedError returns error by combining given details and finishes with caller func name...
+//
+//nolint:err113
+func NewScopedError(scope string, details ...string) *scopedError {
+	return &scopedError{
+		Err: fmt.Errorf("%s: %s", scope,
+			strings.Join(details, ", ")),
+		scope: scope,
+	}
+}
+
+// NewScopedErrorf returns error by combining given details and finishes with caller func name, printf formatting...
+//
+//nolint:err113
+func NewScopedErrorf(format string, scope string, args ...interface{}) *scopedError {
+	return &scopedError{
+		Err: fmt.Errorf(
+			"%s: %s", scope,
+			strings.Join([]string{fmt.Sprintf(format, args...)}, ", "),
+		),
+		scope: scope,
+	}
+}
+
+// ScopedErrorf combines given error with details and finishes with caller func name, printf formatting...
+func ScopedErrorf(err error, scope string,
+	format string,
+	args ...interface{},
+) *scopedError {
+	return ScopedErrorOnly(err, scope, fmt.Sprintf(format, args...))
 }

@@ -32,19 +32,74 @@
 
 package errformatter
 
-//nolint:interfacebloat //it's ok here, we need it we must use it as one big interface
-type selfService interface {
-	ErrorWithCode(err error, code int) error
-	ErrWithCode(err error, code int) error
-	ErrorGetCode(err error) int
-	ErrGetCode(err error) int
-	// ErrorNoWrap function for pseudo-wrap error, must be used in case of linter warnings...
-	ErrorNoWrap(err error) error
-	// ErrNoWrap same with ErrorNoWrap function, just alias for ErrorNoWrap, just short function name...
-	ErrNoWrap(err error) error
-	ErrorOnly(err error, details ...string) error
-	Error(err error, details ...string) error
-	Errorf(err error, format string, args ...interface{}) error
-	NewError(details ...string) error
-	NewErrorf(format string, args ...interface{}) error
+import (
+	"errors"
+	"testing"
+)
+
+func TestErrorFormatting(t *testing.T) {
+	t.Run("error only", func(t *testing.T) {
+		const expectedResult = "test error -> abc"
+
+		err := ErrorOnly(errors.New("test error"), "abc")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
+
+	t.Run("common error", func(t *testing.T) {
+		const expectedResult = "test error -> efg"
+
+		err := Error(errors.New("test error"), "efg")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
+
+	t.Run("new error", func(t *testing.T) {
+		const expectedResult = "test, error - some text"
+
+		err := NewError("test", "error - some text")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
+
+	t.Run("new errorf", func(t *testing.T) {
+		const expectedResult = "test arg - with value 100500"
+
+		err := NewErrorf("test %s - with value %d", "arg", 100500)
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
+
+	t.Run("common errorf", func(t *testing.T) {
+		const expectedResult = "test error -> test arg"
+
+		err := Errorf(errors.New("test error"), "test %s", "arg")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
+
+	t.Run("error no wrap", func(t *testing.T) {
+		const expectedResult = "test error"
+		var errExpected = errors.New(expectedResult)
+
+		err := ErrorNoWrap(errExpected)
+		if !errors.Is(err, errExpected) {
+			t.Errorf("error not equal with expected %s, %s", err.Error(), errExpected.Error())
+		}
+
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
 }

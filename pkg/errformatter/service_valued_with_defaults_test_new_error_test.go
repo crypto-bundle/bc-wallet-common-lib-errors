@@ -32,19 +32,85 @@
 
 package errformatter
 
-//nolint:interfacebloat //it's ok here, we need it we must use it as one big interface
-type selfService interface {
-	ErrorWithCode(err error, code int) error
-	ErrWithCode(err error, code int) error
-	ErrorGetCode(err error) int
-	ErrGetCode(err error) int
-	// ErrorNoWrap function for pseudo-wrap error, must be used in case of linter warnings...
-	ErrorNoWrap(err error) error
-	// ErrNoWrap same with ErrorNoWrap function, just alias for ErrorNoWrap, just short function name...
-	ErrNoWrap(err error) error
-	ErrorOnly(err error, details ...string) error
-	Error(err error, details ...string) error
-	Errorf(err error, format string, args ...interface{}) error
-	NewError(details ...string) error
-	NewErrorf(format string, args ...interface{}) error
+import (
+	"testing"
+)
+
+func TestServiceValuedWithDefaults_NewError(t *testing.T) {
+	runName1 := "valued error - error with 3 scope values for overwrite and details value for overwrite"
+	t.Run(runName1, func(t *testing.T) {
+		var (
+			expectedResult = "valued_err_scope: some error text -> " +
+				"err_detail_true_1, err_detail_true_2"
+		)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "wrong_err_scope_for_overwrite",
+			},
+			{
+				num: KindScope,
+				any: "wrong_err_scope_2_for_overwrite",
+			},
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindDetails,
+				any: []string{"err_detail_true_1", "err_detail_true_2"},
+			},
+		}...)
+
+		err := svc.NewError("some error text")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+	})
+
+	runName2 := "valued error - error with one scope value, one details value and one code value"
+	t.Run(runName2, func(t *testing.T) {
+		var (
+			expectedResult = "valued_err_scope: detail_info_as_value_1, detail_info_as_value_2 -> " +
+				"detail_in_value_1, detail_in_value_2"
+			expectedCode = 9999
+		)
+
+		svc := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindDetails,
+				any: []string{"detail_in_value_1", "detail_in_value_2"},
+			},
+			{
+				num: KindCode,
+				any: 100503,
+			},
+			{
+				num: KindCode,
+				any: expectedCode,
+			},
+		}...)
+
+		err := svc.NewError("detail_info_as_value_1", "detail_info_as_value_2")
+		if err.Error() != expectedResult {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				err.Error(), expectedResult)
+		}
+
+		if code := svc.ErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+
+		if code := ValuedErrorGetCode(err); code != expectedCode {
+			t.Errorf("error code not equal with expected. current: %d, expected: %d",
+				code, expectedCode)
+		}
+	})
 }

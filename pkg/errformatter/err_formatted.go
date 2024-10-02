@@ -33,81 +33,71 @@
 package errformatter
 
 import (
-	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 )
 
-// ErrorScoped its type just for backward compatibility...
-type ErrorScoped scopedError
+func ErrorNoWrap(err error) error {
+	if err == nil {
+		return nil
+	}
 
-type scopedError struct {
-	Err   error
-	scope string
+	return err
 }
 
-// Error to string converter...
-func (e scopedError) Error() string {
-	return e.Err.Error()
-}
-
-// Unwrap returns previous error...
-func (e scopedError) Unwrap() error {
-	return errors.Unwrap(e.Err)
-}
-
-// ScopedErrorOnly combines given error with details, WITHOUT function name...
-func ScopedErrorOnly(err error, scope string, details ...string) *scopedError {
+// ErrorOnly combines given error with details, WITHOUT function name...
+func ErrorOnly(err error, details ...string) error {
 	if err == nil {
 		return nil
 	}
 
 	if len(details) == 0 {
-		return &scopedError{
-			scope: scope,
-			Err:   fmt.Errorf("%s: %w", scope, err),
-		}
+		return err
 	}
 
-	return &scopedError{
-		scope: scope,
-		Err:   fmt.Errorf("%s: %w -> %s", scope, err, strings.Join(details, ", ")),
-	}
+	return fmt.Errorf("%w -> %s", err, strings.Join(details, ", "))
 }
 
-// ScopedError combines given error with details and finishes with caller func name...
-func ScopedError(err error, scope string, details ...string) *scopedError {
-	return ScopedErrorOnly(err, scope, append(details, getFuncName())...)
+// Error combines given error with details and finishes with caller func name...
+func Error(err error, details ...string) error {
+	return ErrorOnly(err, details...)
 }
 
-// NewScopedError returns error by combining given details and finishes with caller func name...
+// NewError returns error by combining given details and finishes with caller func name...
 //
 //nolint:err113
-func NewScopedError(scope string, details ...string) *scopedError {
-	return &scopedError{
-		Err: fmt.Errorf("%s: %s", scope,
-			strings.Join(append(details, getFuncName()), ", ")),
-		scope: scope,
-	}
+func NewError(details ...string) error {
+	return fmt.Errorf("%s", strings.Join(details, ", "))
 }
 
-// NewScopedErrorf returns error by combining given details and finishes with caller func name, printf formatting...
+// NewErrorf returns error by combining given details and finishes with caller func name, printf formatting...
 //
 //nolint:err113
-func NewScopedErrorf(format string, scope string, args ...interface{}) *scopedError {
-	return &scopedError{
-		Err: fmt.Errorf(
-			"%s: %s", scope,
-			strings.Join(append([]string{fmt.Sprintf(format, args...)}, getFuncName()), ", "),
-		),
-		scope: scope,
-	}
+func NewErrorf(format string, args ...interface{}) error {
+	return fmt.Errorf(
+		"%s",
+		strings.Join([]string{fmt.Sprintf(format, args...)}, ", "),
+	)
 }
 
-// ScopedErrorf combines given error with details and finishes with caller func name, printf formatting...
-func ScopedErrorf(err error, scope string,
-	format string,
-	args ...interface{},
-) *scopedError {
-	return ScopedErrorOnly(err, scope, fmt.Sprintf(format, args...), getFuncName())
+// Errorf combines given error with details and finishes with caller func name, printf formatting...
+func Errorf(err error, format string, args ...interface{}) error {
+	return ErrorOnly(err, fmt.Sprintf(format, args...))
+}
+
+//nolint:unused
+func getFuncName() string {
+	pc, file, _, ok := runtime.Caller(CallerStackSkip)
+
+	funcName := file
+
+	details := runtime.FuncForPC(pc)
+	if ok && details != nil {
+		funcNameParts := strings.Split(details.Name(), ".")
+		funcName = fmt.Sprintf("[%s.%s]",
+			funcNameParts[len(funcNameParts)-2], funcNameParts[len(funcNameParts)-1])
+	}
+
+	return funcName
 }

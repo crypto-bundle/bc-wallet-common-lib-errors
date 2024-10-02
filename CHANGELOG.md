@@ -1,5 +1,8 @@
 # Change Log
 
+## [v0.0.6] - 30.09.2024
+### Added
+
 ## [v0.0.4, v0.0.5] - 27.09.2024
 ### Added
 * Added ErrNoWrap/ErrorNoWrap method to all implementations of error formatters

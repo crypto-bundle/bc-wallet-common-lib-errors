@@ -32,19 +32,65 @@
 
 package errformatter
 
-//nolint:interfacebloat //it's ok here, we need it we must use it as one big interface
-type selfService interface {
-	ErrorWithCode(err error, code int) error
-	ErrWithCode(err error, code int) error
-	ErrorGetCode(err error) int
-	ErrGetCode(err error) int
-	// ErrorNoWrap function for pseudo-wrap error, must be used in case of linter warnings...
-	ErrorNoWrap(err error) error
-	// ErrNoWrap same with ErrorNoWrap function, just alias for ErrorNoWrap, just short function name...
-	ErrNoWrap(err error) error
-	ErrorOnly(err error, details ...string) error
-	Error(err error, details ...string) error
-	Errorf(err error, format string, args ...interface{}) error
-	NewError(details ...string) error
-	NewErrorf(format string, args ...interface{}) error
+var _ selfService = (*serviceValued)(nil)
+
+type serviceValued struct{}
+
+func (s *serviceValued) ErrGetCode(err error) int {
+	return s.ErrorGetCode(err)
+}
+
+func (s *serviceValued) ErrorGetCode(err error) int {
+	return ValuedErrorGetCode(err)
+}
+
+func (s *serviceValued) ErrWithCode(err error, code int) error {
+	return s.ErrorWithCode(err, code)
+}
+
+func (s *serviceValued) ErrNoWrap(err error) error {
+	return s.ErrorNoWrap(err)
+}
+
+func (s *serviceValued) ErrorNoWrap(err error) error {
+	return ErrorNoWrap(err)
+}
+
+func (s *serviceValued) ErrorWithCode(err error, code int) error {
+	if code <= 0 {
+		panic("errfmt: code must be positive value")
+	}
+
+	return ValuedErrorOnly(err, NewValue(KindCode, code))
+}
+
+func (s *serviceValued) ErrorOnly(err error, details ...string) error {
+	return ValuedErrorOnly(err, NewValue(KindDetails, details))
+}
+
+func (s *serviceValued) Errorf(err error, format string, args ...interface{}) error {
+	return ValuedErrorf(err, nil, format, args...)
+}
+
+func (s *serviceValued) Error(err error, details ...string) error {
+	return ValuedError(err, nil, details...)
+}
+
+func (s *serviceValued) NewError(details ...string) error {
+	return ValuedNewError(nil, details...)
+}
+
+func (s *serviceValued) NewErrorf(format string, args ...interface{}) error {
+	return ValuedNewErrorf(nil, format, args...)
+}
+
+func NewValuesErrorFormatter(values ...Value) selfService {
+	if len(values) > 0 {
+		return &serviceValuedWithDefaults{
+			serviceValued: &serviceValued{},
+			defaultValues: values,
+		}
+	}
+
+	return &serviceValued{}
 }
