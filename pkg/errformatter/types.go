@@ -32,6 +32,8 @@
 
 package errformatter
 
+import "fmt"
+
 type Bits uint8
 
 const (
@@ -68,6 +70,82 @@ type Value struct {
 	any any
 }
 
+func NewValue(kind Kind, value any) Value {
+	//nolint:exhaustruct //it's ok - field _ disallow struct comparison
+	return Value{
+		num: kind,
+		any: value,
+	}
+}
+
+func (v Value) Kind() Kind {
+	return v.num
+}
+
+func (v Value) GetCode() int {
+	if g, w := v.Kind(), KindCode; g != w {
+		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
+	}
+
+	return v.getCode()
+}
+
+func (v Value) getCode() int {
+	if code, ok := v.any.(int); ok {
+		return code
+	}
+
+	return ValueCodeMissing
+}
+
+func (v Value) GetPublicCode() int {
+	if g, w := v.Kind(), KindPublicCode; g != w {
+		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
+	}
+
+	return v.getPublicCode()
+}
+
+func (v Value) getPublicCode() int {
+	if code, ok := v.any.(int); ok {
+		return code
+	}
+
+	return -1
+}
+
+func (v Value) GetDetails() []string {
+	if g, w := v.Kind(), KindDetails; g != w {
+		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
+	}
+
+	return v.getDetails()
+}
+
+func (v Value) getDetails() []string {
+	if details, ok := v.any.([]string); ok {
+		return details
+	}
+
+	return nil
+}
+
+func (v Value) GetScope() []string {
+	if g, w := v.Kind(), KindScope; g != w {
+		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
+	}
+
+	return v.getDetails()
+}
+
+func (v Value) getScope() string {
+	if scope, ok := v.any.(string); ok {
+		return scope
+	}
+
+	return ""
+}
+
 // Kind is the kind of [Value].
 type Kind uint
 
@@ -84,7 +162,30 @@ const (
 	// This constant must be last in order of Kind constants.
 	// Usage example in `valuedError` struct...
 	MaxKindValue = iota - 1
+
+	KinaEmptyName      = "kind_empty"
+	KindDetailsName    = "kind_details"
+	KindScopeName      = "kind_scope"
+	KindCodeName       = "kind_code"
+	KindPublicCodeName = "kind_public_code"
 )
+
+func (k Kind) String() string {
+	switch k {
+	case KindEmpty:
+		return KinaEmptyName
+	case KindDetails:
+		return KindDetailsName
+	case KindScope:
+		return KindScopeName
+	case KindCode:
+		return KindCodeName
+	case KindPublicCode:
+		return KindPublicCodeName
+	default:
+		return KinaEmptyName
+	}
+}
 
 func (k Kind) Bits() Bits {
 	switch k {

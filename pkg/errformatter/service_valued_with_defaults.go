@@ -52,10 +52,7 @@ func (s *serviceValuedWithDefaults) ErrorWithCode(err error, code int) error {
 
 	valuesList := make([]Value, count+1)
 	copy(valuesList, s.defaultValues)
-	valuesList[count] = Value{
-		num: KindCode,
-		any: code,
-	}
+	valuesList[count] = NewValue(KindCode, code)
 
 	return MultiValuedErrorOnly(err, valuesList...)
 }
@@ -69,10 +66,7 @@ func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) erro
 	copy(valuesList[:count], s.defaultValues)
 
 	if len(details) > 0 {
-		valuesList[count] = Value{
-			num: KindDetails,
-			any: details,
-		}
+		valuesList[count] = NewValue(KindDetails, details)
 	}
 
 	return MultiValuedErrorOnly(err, valuesList...)

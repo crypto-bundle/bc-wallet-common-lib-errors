@@ -55,13 +55,9 @@ func (s *serviceScoped) ErrorWithCode(err error, code int) error {
 		panic("errfmt: code must be positive value")
 	}
 
-	return MultiValuedErrorOnly(err, Value{
-		num: KindCode,
-		any: code,
-	}, Value{
-		num: KindScope,
-		any: s.scope,
-	})
+	return MultiValuedErrorOnly(err,
+		NewValue(KindCode, code),
+		NewValue(KindScope, s.scope))
 }
 
 func (s *serviceScoped) ErrNoWrap(err error) error {

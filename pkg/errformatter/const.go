@@ -33,6 +33,6 @@
 package errformatter
 
 const (
-	CallerStackSkip = 2
-	ValueMissing    = -1
+	CallerStackSkip  = 2
+	ValueCodeMissing = -1
 )

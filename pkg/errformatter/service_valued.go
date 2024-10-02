@@ -61,17 +61,11 @@ func (s *serviceValued) ErrorWithCode(err error, code int) error {
 		panic("errfmt: code must be positive value")
 	}
 
-	return ValuedErrorOnly(err, Value{
-		num: KindCode,
-		any: code,
-	})
+	return ValuedErrorOnly(err, NewValue(KindCode, code))
 }
 
 func (s *serviceValued) ErrorOnly(err error, details ...string) error {
-	return ValuedErrorOnly(err, Value{
-		num: KindDetails,
-		any: details,
-	})
+	return ValuedErrorOnly(err, NewValue(KindDetails, details))
 }
 
 func (s *serviceValued) Errorf(err error, format string, args ...interface{}) error {

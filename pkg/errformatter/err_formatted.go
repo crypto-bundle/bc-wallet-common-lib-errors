@@ -86,6 +86,7 @@ func Errorf(err error, format string, args ...interface{}) error {
 	return ErrorOnly(err, fmt.Sprintf(format, args...))
 }
 
+//nolint:unused
 func getFuncName() string {
 	pc, file, _, ok := runtime.Caller(CallerStackSkip)
 

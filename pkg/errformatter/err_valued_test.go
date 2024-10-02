@@ -215,9 +215,9 @@ func TestValuedErrorFormatting(t *testing.T) {
 				unWrappedErr, errForWrap)
 		}
 
-		if code := ValuedErrorGetCode(errForWrap); code != ValueMissing {
+		if code := ValuedErrorGetCode(errForWrap); code != ValueCodeMissing {
 			t.Errorf("error code not equal with expected. current: %d, expected: %d",
-				code, ValueMissing)
+				code, ValueCodeMissing)
 		}
 	})
 }

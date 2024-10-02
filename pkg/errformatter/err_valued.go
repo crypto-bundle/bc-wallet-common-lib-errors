@@ -56,15 +56,10 @@ func (e valuedError) Unwrap() error {
 
 func (e *valuedError) getCode() int {
 	if !e.settled.Has(ValueCodeIsSet) {
-		return ValueMissing
+		return ValueCodeMissing
 	}
 
-	code, isCasted := e.values[KindCode].any.(int)
-	if !isCasted {
-		return ValueMissing
-	}
-
-	return code
+	return e.values[KindCode].getCode()
 }
 
 func (e *valuedError) setValues(values ...Value) *valuedError {
@@ -85,18 +80,18 @@ func (e *valuedError) setValue(value Value) *valuedError {
 func (e *valuedError) setError(err error) *valuedError {
 	switch {
 	case e.settled.Has(ValueDetailsIsSet) && e.settled.Has(ValueScopeIsSet):
-		scope := e.values[KindScope].any.(string)
-		details := e.values[KindDetails].any.([]string)
+		scope := e.values[KindScope].getScope()
+		details := e.values[KindDetails].getDetails()
 
 		e.Err = fmt.Errorf("%s: %w -> %s", scope, err, strings.Join(details, ", "))
 
 	case e.settled.Has(ValueDetailsIsSet) && !e.settled.Has(ValueScopeIsSet):
-		details := e.values[KindDetails].any.([]string)
+		details := e.values[KindDetails].getDetails()
 
 		e.Err = fmt.Errorf("%w -> %s", err, strings.Join(details, ", "))
 
 	case !e.settled.Has(ValueDetailsIsSet) && e.settled.Has(ValueScopeIsSet):
-		scope := e.values[KindScope].any.(string)
+		scope := e.values[KindScope].getScope()
 
 		e.Err = fmt.Errorf("%s: %w", scope, err)
 	default:
@@ -110,7 +105,7 @@ func ValuedErrorGetCode(err error) int {
 	var vErr *valuedError
 
 	if !errors.As(err, &vErr) {
-		return ValueMissing
+		return ValueCodeMissing
 	}
 
 	return vErr.getCode()
@@ -146,10 +141,7 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 
 // ValuedError combines given error with details and finishes with caller func name, printf formatting...
 func ValuedError(err error, values []Value, details ...string) *valuedError {
-	values = append(values, Value{
-		num: KindDetails,
-		any: details,
-	})
+	values = append(values, NewValue(KindDetails, details))
 
 	return MultiValuedErrorOnly(err, values...).setError(err)
 }
@@ -176,6 +168,8 @@ func ValuedErrorf(err error,
 }
 
 // ValuedNewError combines given error with details and finishes with caller func name, printf formatting...
+//
+//nolint:err113
 func ValuedNewError(values []Value, details ...string) *valuedError {
 	var vErr valuedError
 
@@ -185,6 +179,8 @@ func ValuedNewError(values []Value, details ...string) *valuedError {
 }
 
 // ValuedNewErrorf combines given error with details and finishes with caller func name, printf formatting...
+//
+//nolint:err113
 func ValuedNewErrorf(values []Value, format string, args ...interface{}) *valuedError {
 	var vErr valuedError
 

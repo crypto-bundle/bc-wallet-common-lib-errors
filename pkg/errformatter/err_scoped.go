@@ -86,7 +86,7 @@ func ScopedError(err error, scope string, details ...string) *scopedError {
 func NewScopedError(scope string, details ...string) *scopedError {
 	return &scopedError{
 		Err: fmt.Errorf("%s: %s", scope,
-			strings.Join(append(details), ", ")),
+			strings.Join(details, ", ")),
 		scope: scope,
 	}
 }

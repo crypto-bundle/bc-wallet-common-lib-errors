@@ -32,6 +32,7 @@
 
 package errformatter
 
+//nolint:interfacebloat //it's ok here, we need it we must use it as one big interface
 type selfService interface {
 	ErrorWithCode(err error, code int) error
 	ErrWithCode(err error, code int) error

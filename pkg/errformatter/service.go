@@ -55,10 +55,7 @@ func (s *service) ErrorWithCode(err error, code int) error {
 		panic("errfmt: code must be positive value")
 	}
 
-	return ValuedErrorOnly(err, Value{
-		num: KindCode,
-		any: code,
-	})
+	return ValuedErrorOnly(err, NewValue(KindCode, code))
 }
 
 func (s *service) ErrNoWrap(err error) error {
