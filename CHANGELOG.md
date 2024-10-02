@@ -2,12 +2,23 @@
 
 ## [v0.0.6] - 30.09.2024
 ### Added
+* Added value based error format service component, currently support next kind of values:
+  * KindDetails
+  * KindScope 
+  * KindCode 
+  * KindPublicCode
+* Added unit-tests for value-based formatter
+* Added new public receiver-methods for all formatters:
+  * ErrorWithCode/ErrWithCode
+  * ErrorGetCode/ErrGetCode
+### Changed
+* Removed usage of getFuncName(), now all errors wrapped without name of caller-function in error text 
 
 ## [v0.0.4, v0.0.5] - 27.09.2024
 ### Added
 * Added ErrNoWrap/ErrorNoWrap method to all implementations of error formatters
 ### Changed
-* Fixed linet issues
+* Fixed linter issues
 * Added new settings to wrapcheck linter
 
 ## [v0.0.3] - 29.08.2024
