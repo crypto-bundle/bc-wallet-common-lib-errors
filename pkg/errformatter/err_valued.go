@@ -54,6 +54,28 @@ func (e valuedError) Unwrap() error {
 	return errors.Unwrap(e.Err)
 }
 
+func (e *valuedError) ScopeIs(scope string) bool {
+	return e.scopeIsEqualWith(scope)
+}
+
+func (e *valuedError) scopeIsEqualWith(scope string) bool {
+	if !e.settled.Has(ValueScopeIsSet) {
+		return false
+	}
+
+	currentScope := e.values[KindScope].getScope()
+
+	return currentScope == scope
+}
+
+func (e *valuedError) getScope() string {
+	if !e.settled.Has(ValueScopeIsSet) {
+		return ""
+	}
+
+	return e.values[KindScope].getScope()
+}
+
 func (e *valuedError) getCode() int {
 	if !e.settled.Has(ValueCodeIsSet) {
 		return ValueCodeMissing
@@ -101,6 +123,48 @@ func (e *valuedError) setError(err error) *valuedError {
 	return e
 }
 
+func (e *valuedError) reWrap(value Value) *valuedError {
+	if value.Kind() != KindScope {
+		return e.setValue(value).setError(e.Err)
+	}
+
+	if !e.scopeIsEqualWith(value.getScope()) {
+		return e.setValue(value).setError(e.Err)
+	}
+
+	return e
+}
+
+func (e *valuedError) reWrapByValues(values ...Value) *valuedError {
+	if !e.settled.Has(ValueScopeIsSet) {
+		return e.setValues(values...).setError(e.Err)
+	}
+
+	var scopeValue Value
+
+	for i := range values {
+		value := values[i]
+
+		if value.Kind() != KindScope {
+			_ = e.setValue(value)
+
+			continue
+		}
+
+		scopeValue = value
+	}
+
+	if scopeValue.Kind() != KindScope {
+		return e.setError(e.Err)
+	}
+
+	if !e.scopeIsEqualWith(scopeValue.getScope()) { // in case of re-wrap with another scope
+		return e.setValue(scopeValue).setError(e.Err)
+	}
+
+	return e.setError(e.Unwrap())
+}
+
 func ValuedErrorGetCode(err error) int {
 	var vErr *valuedError
 
@@ -117,10 +181,12 @@ func ValuedErrorOnly(err error, value Value) *valuedError {
 		return nil
 	}
 
-	var vErr valuedError
+	var vErr *valuedError
 	if errors.As(err, &vErr) {
-		return vErr.setValue(value)
+		return vErr.reWrap(value)
 	}
+
+	vErr = &valuedError{}
 
 	return vErr.setValue(value).setError(err)
 }
@@ -131,10 +197,12 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 		return nil
 	}
 
-	var vErr valuedError
+	var vErr *valuedError
 	if errors.As(err, &vErr) {
-		return vErr.setValues(value...)
+		return vErr.reWrapByValues(value...)
 	}
+
+	vErr = &valuedError{}
 
 	return vErr.setValues(value...).setError(err)
 }
@@ -156,13 +224,18 @@ func ValuedErrorf(err error,
 		return nil
 	}
 
-	var vErr valuedError
-
+	var vErr *valuedError
 	if errors.As(err, &vErr) {
+		vErr.Err = ErrorOnly(vErr.Err, fmt.Sprintf(format, args...))
+
 		return vErr.setValues(values...)
 	}
 
-	vErr.Err = ErrorOnly(err, fmt.Sprintf(format, args...))
+	vErr = &valuedError{
+		Err:     ErrorOnly(err, fmt.Sprintf(format, args...)),
+		values:  [4]Value{},
+		settled: 0,
+	}
 
 	return vErr.setValues(values...)
 }

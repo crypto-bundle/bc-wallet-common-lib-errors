@@ -62,7 +62,6 @@ func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) erro
 	detailsCount := len(details)
 
 	valuesList := make([]Value, count+detailsCount)
-
 	copy(valuesList[:count], s.defaultValues)
 
 	if len(details) > 0 {

@@ -130,12 +130,12 @@ func (v Value) getDetails() []string {
 	return nil
 }
 
-func (v Value) GetScope() []string {
+func (v Value) GetScope() string {
 	if g, w := v.Kind(), KindScope; g != w {
 		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
 	}
 
-	return v.getDetails()
+	return v.getScope()
 }
 
 func (v Value) getScope() string {
