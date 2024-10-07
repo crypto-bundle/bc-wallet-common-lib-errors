@@ -1,6 +1,15 @@
 # Change Log
 
-## [v0.0.6] - 02.09.2024
+## [v0.0.7] - 04.10.2024
+### Fixed
+* Fixed bug with empty details list in re-wrap case
+* Fixed bug fill error by default values in defaultValues formatter service-component:
+  * Problem with copy slice in .ErrorOnly method. Unnecessary empty values in copy default values to error builder
+### Added
+* Added re-wrap flow for .Error/.ErrorOnly methods
+* Added unit-tests for .Error/.ErrorOnly/NewError/Errorf methods
+
+## [v0.0.6] - 02.10.2024
 ### Added
 * Added value based error format service component, currently support next kind of values:
   * KindDetails

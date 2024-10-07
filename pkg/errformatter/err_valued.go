@@ -54,6 +54,41 @@ func (e valuedError) Unwrap() error {
 	return errors.Unwrap(e.Err)
 }
 
+func (e *valuedError) SetScope(scope string) *valuedError {
+	e.settled.Set(KindScope.Bits())
+	e.values[KindScope].SetScope(scope)
+
+	return e
+}
+
+func (e *valuedError) MergeDetails(details ...string) *valuedError {
+	e.settled.Set(KindDetails.Bits())
+	e.values[KindDetails].mergeDetails(details...)
+
+	return e
+}
+
+func (e *valuedError) AddDetails(details ...string) *valuedError {
+	e.settled.Set(KindDetails.Bits())
+	e.values[KindDetails].addDetails(details...)
+
+	return e
+}
+
+func (e *valuedError) ScopeIs(scope string) bool {
+	return e.scopeIsEqualWith(scope)
+}
+
+func (e *valuedError) scopeIsEqualWith(scope string) bool {
+	if !e.settled.Has(ValueScopeIsSet) {
+		return false
+	}
+
+	currentScope := e.values[KindScope].getScope()
+
+	return currentScope == scope
+}
+
 func (e *valuedError) getCode() int {
 	if !e.settled.Has(ValueCodeIsSet) {
 		return ValueCodeMissing
@@ -101,6 +136,75 @@ func (e *valuedError) setError(err error) *valuedError {
 	return e
 }
 
+func (e *valuedError) reWrap(value Value) *valuedError {
+	if value.Kind() != KindScope {
+		return e.setValue(value).setError(e.Err)
+	}
+
+	if !e.scopeIsEqualWith(value.getScope()) {
+		return e.setValue(value).setError(e.Err)
+	}
+
+	return e
+}
+
+//nolint:cyclop // it's ok. this function is really need to be with not easy logic
+func (e *valuedError) reWrapByValues(values ...Value) *valuedError {
+	if !e.settled.Has(ValueScopeIsSet) {
+		return e.setValues(values...).setError(e.Err)
+	}
+
+	var (
+		newScopeValue   Value
+		newDetailsValue Value
+	)
+
+	// for-loop for find scope and details values
+	for i := range values {
+		value := values[i]
+
+		switch value.Kind() {
+		case KindDetails:
+			newDetailsValue = value
+		case KindScope:
+			newScopeValue = value
+		default:
+			_ = e.setValue(value)
+		}
+	}
+
+	isNewScopeExists := newScopeValue.KindOf(KindScope)
+	isNewDetailsExists := newDetailsValue.KindOf(KindDetails)
+
+	switch {
+	case !isNewScopeExists && !isNewDetailsExists:
+		return e
+	// if case of wrap error to new error with old scope and new details
+	case !isNewScopeExists && isNewDetailsExists:
+		return e.setValue(newDetailsValue).setError(e.Err)
+
+	// if case of re-format error with same scope and new details
+	case isNewScopeExists && isNewDetailsExists && e.scopeIsEqualWith(newScopeValue.getScope()):
+		return e.MergeDetails(newDetailsValue.getDetails()...).setError(e.Unwrap())
+
+	// if case when we have no new details and scope is equal with current, just return current error instance
+	case isNewScopeExists && !isNewDetailsExists && e.scopeIsEqualWith(newScopeValue.getScope()):
+		return e
+
+	// if case of wrap error to new error with new scope and without new details
+	case isNewScopeExists && !isNewDetailsExists && !e.scopeIsEqualWith(newScopeValue.getScope()):
+		return e.setValue(newScopeValue).setError(e.Err)
+
+	// if case of wrap error to new error with new scope with and details
+	// set new scope value, and set new details value, and wrap current error to new
+	case isNewScopeExists && isNewDetailsExists && !e.scopeIsEqualWith(newScopeValue.getScope()):
+		return e.setValue(newScopeValue).setValues(newDetailsValue).setError(e.Err)
+
+	default:
+		return e.setError(e.Err)
+	}
+}
+
 func ValuedErrorGetCode(err error) int {
 	var vErr *valuedError
 
@@ -117,9 +221,15 @@ func ValuedErrorOnly(err error, value Value) *valuedError {
 		return nil
 	}
 
-	var vErr valuedError
+	var vErr *valuedError
 	if errors.As(err, &vErr) {
-		return vErr.setValue(value)
+		return vErr.reWrap(value)
+	}
+
+	vErr = &valuedError{
+		Err:     nil,
+		values:  [4]Value{},
+		settled: 0,
 	}
 
 	return vErr.setValue(value).setError(err)
@@ -131,9 +241,15 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 		return nil
 	}
 
-	var vErr valuedError
+	var vErr *valuedError
 	if errors.As(err, &vErr) {
-		return vErr.setValues(value...)
+		return vErr.reWrapByValues(value...)
+	}
+
+	vErr = &valuedError{
+		Err:     nil,
+		values:  [4]Value{},
+		settled: 0,
 	}
 
 	return vErr.setValues(value...).setError(err)
@@ -143,7 +259,7 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 func ValuedError(err error, values []Value, details ...string) *valuedError {
 	values = append(values, NewValue(KindDetails, details))
 
-	return MultiValuedErrorOnly(err, values...).setError(err)
+	return MultiValuedErrorOnly(err, values...)
 }
 
 // ValuedErrorf combines given error with details and finishes with caller func name, printf formatting...
@@ -156,13 +272,18 @@ func ValuedErrorf(err error,
 		return nil
 	}
 
-	var vErr valuedError
-
+	var vErr *valuedError
 	if errors.As(err, &vErr) {
+		vErr.Err = ErrorOnly(vErr.Err, fmt.Sprintf(format, args...))
+
 		return vErr.setValues(values...)
 	}
 
-	vErr.Err = ErrorOnly(err, fmt.Sprintf(format, args...))
+	vErr = &valuedError{
+		Err:     ErrorOnly(err, fmt.Sprintf(format, args...)),
+		values:  [4]Value{},
+		settled: 0,
+	}
 
 	return vErr.setValues(values...)
 }

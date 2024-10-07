@@ -112,3 +112,163 @@ func TestServiceValuedWithDefaults_ErrorOnly(t *testing.T) {
 		}
 	})
 }
+
+func TestServiceValuedWithDefaults_ErrorOnly_ReWrap(t *testing.T) {
+	t.Run("valued error only - ReWrap scoped error by different fmt services", func(t *testing.T) {
+		const (
+			expectedResultBeforeReWrap = "valued_err_scope: test error"
+			expectedResultAfterReWrap  = "re_wrap_scope: valued_err_scope: test error"
+			expectedTextForWrap        = "test error"
+		)
+		var errorForWrap = errors.New(expectedTextForWrap)
+
+		svcOne := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "wrong_err_scope",
+			},
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+		}...)
+
+		wrapped := svcOne.ErrorOnly(errorForWrap)
+		if wrapped.Error() != expectedResultBeforeReWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				wrapped.Error(), expectedResultBeforeReWrap)
+		}
+
+		svcErrReWrap := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "re_wrap_scope",
+			},
+		}...)
+
+		reWrapErr := svcErrReWrap.ErrorOnly(wrapped)
+		if reWrapErr.Error() != expectedResultAfterReWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				reWrapErr.Error(), expectedResultAfterReWrap)
+		}
+
+		unwrapReWrapErr := errors.Unwrap(reWrapErr)
+
+		if !errors.Is(unwrapReWrapErr, errorForWrap) {
+			t.Errorf("error text not equal with expected. current: %e, expected: %e",
+				unwrapReWrapErr, wrapped)
+		}
+
+		if unwrapReWrapErr.Error() != expectedResultBeforeReWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				unwrapReWrapErr.Error(), expectedResultBeforeReWrap)
+		}
+	})
+
+	t.Run("valued error only - ReWrap scope + details error by different fmt services", func(t *testing.T) {
+		const (
+			expectedResultBeforeReWrap = "valued_err_scope: test error -> detail_info_as_value_1"
+			expectedResultAfterReWrap  = "re_wrap_scope: valued_err_scope: test error -> detail_info_as_value_1 -> detail_info_as_value_2, detail_info_as_value_3"
+			expectedTextForWrap        = "test error"
+		)
+		var errorForWrap = errors.New(expectedTextForWrap)
+
+		svcOne := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "wrong_err_scope",
+			},
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindDetails,
+				any: []string{"detail_info_as_value_1"},
+			},
+		}...)
+
+		wrapped := svcOne.ErrorOnly(errorForWrap)
+		if wrapped.Error() != expectedResultBeforeReWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				wrapped.Error(), expectedResultBeforeReWrap)
+		}
+
+		svcErrReWrap := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "re_wrap_scope",
+			},
+			{
+				num: KindDetails,
+				any: []string{"detail_info_as_value_2", "detail_info_as_value_3"},
+			},
+		}...)
+
+		reWrapErr := svcErrReWrap.ErrorOnly(wrapped)
+		if reWrapErr.Error() != expectedResultAfterReWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				reWrapErr.Error(), expectedResultAfterReWrap)
+		}
+
+		unwrapRewrapErr := errors.Unwrap(reWrapErr)
+
+		if !errors.Is(unwrapRewrapErr, errorForWrap) {
+			t.Errorf("error text not equal with expected. current: %e, expected: %e",
+				unwrapRewrapErr, wrapped)
+		}
+
+		if unwrapRewrapErr.Error() != expectedResultBeforeReWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				unwrapRewrapErr.Error(), expectedResultBeforeReWrap)
+		}
+	})
+
+	t.Run("valued error only - ReWrap scope + details error by one fmt services and same scope", func(t *testing.T) {
+		const (
+			expectedResultBeforeReWrap = "valued_err_scope: test error -> detail_info_as_value_1"
+			expectedResultAfterReWrap  = "valued_err_scope: test error -> detail_info_as_value_1, detail_info_as_value_2, detail_info_as_value_3"
+			expectedTextForWrap        = "test error"
+		)
+		var errorForWrap = errors.New(expectedTextForWrap)
+
+		svcOne := NewValuesErrorFormatter([]Value{
+			{
+				num: KindScope,
+				any: "wrong_err_scope",
+			},
+			{
+				num: KindScope,
+				any: "valued_err_scope",
+			},
+			{
+				num: KindDetails,
+				any: []string{"detail_info_as_value_1"},
+			},
+		}...)
+
+		wrapped := svcOne.ErrorOnly(errorForWrap)
+		if wrapped.Error() != expectedResultBeforeReWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				wrapped.Error(), expectedResultBeforeReWrap)
+		}
+
+		reWrapErr := svcOne.ErrorOnly(wrapped, "detail_info_as_value_2", "detail_info_as_value_3")
+		if reWrapErr.Error() != expectedResultAfterReWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				reWrapErr.Error(), expectedResultAfterReWrap)
+		}
+
+		unwrapRewrapErr := errors.Unwrap(reWrapErr)
+
+		if !errors.Is(unwrapRewrapErr, errorForWrap) {
+			t.Errorf("error text not equal with expected. current: %e, expected: %e",
+				unwrapRewrapErr, wrapped)
+		}
+
+		if unwrapRewrapErr.Error() != expectedTextForWrap {
+			t.Errorf("error text not equal with expected. current: %s, expected: %s",
+				unwrapRewrapErr.Error(), expectedTextForWrap)
+		}
+	})
+}
