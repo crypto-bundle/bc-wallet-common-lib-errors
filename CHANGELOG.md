@@ -1,6 +1,6 @@
 # Change Log
 
-## [v0.0.7] - 04.10.2024
+## [v0.0.7] - 07.10.2024
 ### Fixed
 * Fixed bug with empty details list in re-wrap case
 * Fixed bug fill error by default values in defaultValues formatter service-component:
