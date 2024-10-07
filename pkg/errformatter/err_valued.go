@@ -61,9 +61,16 @@ func (e *valuedError) SetScope(scope string) *valuedError {
 	return e
 }
 
+func (e *valuedError) MergeDetails(details ...string) *valuedError {
+	e.settled.Set(KindDetails.Bits())
+	e.values[KindDetails].mergeDetails(details...)
+
+	return e
+}
+
 func (e *valuedError) AddDetails(details ...string) *valuedError {
 	e.settled.Set(KindDetails.Bits())
-	e.values[KindDetails].AddDetails(details...)
+	e.values[KindDetails].addDetails(details...)
 
 	return e
 }
@@ -80,14 +87,6 @@ func (e *valuedError) scopeIsEqualWith(scope string) bool {
 	currentScope := e.values[KindScope].getScope()
 
 	return currentScope == scope
-}
-
-func (e *valuedError) getScope() string {
-	if !e.settled.Has(ValueScopeIsSet) {
-		return ""
-	}
-
-	return e.values[KindScope].getScope()
 }
 
 func (e *valuedError) getCode() int {
@@ -149,14 +148,18 @@ func (e *valuedError) reWrap(value Value) *valuedError {
 	return e
 }
 
+//nolint:cyclop // it's ok. this function is really need to be with not easy logic
 func (e *valuedError) reWrapByValues(values ...Value) *valuedError {
 	if !e.settled.Has(ValueScopeIsSet) {
 		return e.setValues(values...).setError(e.Err)
 	}
 
-	var scopeValue Value
-	var newDetailsValue Value
+	var (
+		newScopeValue   Value
+		newDetailsValue Value
+	)
 
+	// for-loop for find scope and details values
 	for i := range values {
 		value := values[i]
 
@@ -164,24 +167,42 @@ func (e *valuedError) reWrapByValues(values ...Value) *valuedError {
 		case KindDetails:
 			newDetailsValue = value
 		case KindScope:
-			scopeValue = value
+			newScopeValue = value
 		default:
 			_ = e.setValue(value)
 		}
-
 	}
 
-	if scopeValue.Kind() != KindScope { // in case of re-wrap error without scope
+	isNewScopeExists := newScopeValue.KindOf(KindScope)
+	isNewDetailsExists := newDetailsValue.KindOf(KindDetails)
+
+	switch {
+	case !isNewScopeExists && !isNewDetailsExists:
+		return e
+	// if case of wrap error to new error with old scope and new details
+	case !isNewScopeExists && isNewDetailsExists:
 		return e.setValue(newDetailsValue).setError(e.Err)
+
+	// if case of re-format error with same scope and new details
+	case isNewScopeExists && isNewDetailsExists && e.scopeIsEqualWith(newScopeValue.getScope()):
+		return e.MergeDetails(newDetailsValue.getDetails()...).setError(e.Unwrap())
+
+	// if case when we have no new details and scope is equal with current, just return current error instance
+	case isNewScopeExists && !isNewDetailsExists && e.scopeIsEqualWith(newScopeValue.getScope()):
+		return e
+
+	// if case of wrap error to new error with new scope and without new details
+	case isNewScopeExists && !isNewDetailsExists && !e.scopeIsEqualWith(newScopeValue.getScope()):
+		return e.setValue(newScopeValue).setError(e.Err)
+
+	// if case of wrap error to new error with new scope with and details
+	// set new scope value, and set new details value, and wrap current error to new
+	case isNewScopeExists && isNewDetailsExists && !e.scopeIsEqualWith(newScopeValue.getScope()):
+		return e.setValue(newScopeValue).setValues(newDetailsValue).setError(e.Err)
+
+	default:
+		return e.setError(e.Err)
 	}
-
-	if !e.scopeIsEqualWith(scopeValue.getScope()) { // in case of re-wrap with another scope
-		return e.setValue(scopeValue).setError(e.Err)
-	}
-
-	e.values[KindDetails].addDetails(newDetailsValue.getDetails()...)
-
-	return e.setError(e.Unwrap())
 }
 
 func ValuedErrorGetCode(err error) int {
@@ -205,7 +226,11 @@ func ValuedErrorOnly(err error, value Value) *valuedError {
 		return vErr.reWrap(value)
 	}
 
-	vErr = &valuedError{}
+	vErr = &valuedError{
+		Err:     nil,
+		values:  [4]Value{},
+		settled: 0,
+	}
 
 	return vErr.setValue(value).setError(err)
 }
@@ -221,7 +246,11 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 		return vErr.reWrapByValues(value...)
 	}
 
-	vErr = &valuedError{}
+	vErr = &valuedError{
+		Err:     nil,
+		values:  [4]Value{},
+		settled: 0,
+	}
 
 	return vErr.setValues(value...).setError(err)
 }

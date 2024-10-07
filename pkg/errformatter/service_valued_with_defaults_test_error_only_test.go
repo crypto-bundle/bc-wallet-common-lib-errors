@@ -227,7 +227,7 @@ func TestServiceValuedWithDefaults_ErrorOnly_ReWrap(t *testing.T) {
 	t.Run("valued error only - ReWrap scope + details error by one fmt services and same scope", func(t *testing.T) {
 		const (
 			expectedResultBeforeReWrap = "valued_err_scope: test error -> detail_info_as_value_1"
-			expectedResultAfterReWrap  = "valued_err_scope: test error -> detail_info_as_value_1 -> detail_info_as_value_2, detail_info_as_value_3"
+			expectedResultAfterReWrap  = "valued_err_scope: test error -> detail_info_as_value_1, detail_info_as_value_2, detail_info_as_value_3"
 			expectedTextForWrap        = "test error"
 		)
 		var errorForWrap = errors.New(expectedTextForWrap)
@@ -266,9 +266,9 @@ func TestServiceValuedWithDefaults_ErrorOnly_ReWrap(t *testing.T) {
 				unwrapRewrapErr, wrapped)
 		}
 
-		if unwrapRewrapErr.Error() != expectedResultBeforeReWrap {
+		if unwrapRewrapErr.Error() != expectedTextForWrap {
 			t.Errorf("error text not equal with expected. current: %s, expected: %s",
-				unwrapRewrapErr.Error(), expectedResultBeforeReWrap)
+				unwrapRewrapErr.Error(), expectedTextForWrap)
 		}
 	})
 }
