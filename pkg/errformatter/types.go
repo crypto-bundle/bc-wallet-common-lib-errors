@@ -144,7 +144,7 @@ func (v Value) MergeDetails(details ...string) []string {
 		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
 	}
 
-	return v.addDetails(details...)
+	return v.mergeDetails(details...)
 }
 
 func (v Value) mergeDetails(newDetails ...string) []string {
