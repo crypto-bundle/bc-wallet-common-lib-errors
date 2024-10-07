@@ -54,6 +54,20 @@ func (e valuedError) Unwrap() error {
 	return errors.Unwrap(e.Err)
 }
 
+func (e *valuedError) SetScope(scope string) *valuedError {
+	e.settled.Set(KindScope.Bits())
+	e.values[KindScope].SetScope(scope)
+
+	return e
+}
+
+func (e *valuedError) AddDetails(details ...string) *valuedError {
+	e.settled.Set(KindDetails.Bits())
+	e.values[KindDetails].AddDetails(details...)
+
+	return e
+}
+
 func (e *valuedError) ScopeIs(scope string) bool {
 	return e.scopeIsEqualWith(scope)
 }
@@ -141,26 +155,31 @@ func (e *valuedError) reWrapByValues(values ...Value) *valuedError {
 	}
 
 	var scopeValue Value
+	var newDetailsValue Value
 
 	for i := range values {
 		value := values[i]
 
-		if value.Kind() != KindScope {
+		switch value.Kind() {
+		case KindDetails:
+			newDetailsValue = value
+		case KindScope:
+			scopeValue = value
+		default:
 			_ = e.setValue(value)
-
-			continue
 		}
 
-		scopeValue = value
 	}
 
-	if scopeValue.Kind() != KindScope {
-		return e.setError(e.Err)
+	if scopeValue.Kind() != KindScope { // in case of re-wrap error without scope
+		return e.setValue(newDetailsValue).setError(e.Err)
 	}
 
 	if !e.scopeIsEqualWith(scopeValue.getScope()) { // in case of re-wrap with another scope
 		return e.setValue(scopeValue).setError(e.Err)
 	}
+
+	e.values[KindDetails].addDetails(newDetailsValue.getDetails()...)
 
 	return e.setError(e.Unwrap())
 }

@@ -130,6 +130,73 @@ func (v Value) getDetails() []string {
 	return nil
 }
 
+func (v Value) SetDetails(details ...string) []string {
+	if g, w := v.Kind(), KindDetails; g != w {
+		v.num = KindDetails
+		v.any = details
+	}
+
+	return details
+}
+
+func (v Value) MergeDetails(details ...string) []string {
+	if g, w := v.Kind(), KindDetails; g != w {
+		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
+	}
+
+	return v.addDetails(details...)
+}
+
+func (v Value) mergeDetails(newDetails ...string) []string {
+	currentDetails, ok := v.any.([]string)
+	if !ok {
+		v.any = newDetails
+
+		return newDetails
+	}
+
+	existMap := make(map[string]struct{}, len(currentDetails))
+	merged := append(currentDetails, newDetails...)
+	result := make([]string, 0, len(currentDetails))
+
+	for i := range merged {
+		detailValue := merged[i]
+
+		_, isExists := existMap[detailValue]
+		if isExists {
+			continue
+		}
+
+		existMap[detailValue] = struct{}{}
+		result = append(result, detailValue)
+	}
+
+	v.any = result
+
+	return result
+}
+
+func (v Value) AddDetails(details ...string) []string {
+	if g, w := v.Kind(), KindDetails; g != w {
+		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
+	}
+
+	return v.addDetails(details...)
+}
+
+func (v Value) addDetails(newDetails ...string) []string {
+	if currentDetails, ok := v.any.([]string); ok {
+		merged := append(currentDetails, newDetails...)
+		v.any = merged
+
+		return merged
+	}
+
+	v.any = newDetails
+
+	return nil
+}
+
 func (v Value) GetScope() string {
 	if g, w := v.Kind(), KindScope; g != w {
 		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
@@ -144,6 +211,21 @@ func (v Value) getScope() string {
 	}
 
 	return ""
+}
+
+func (v Value) SetScope(scopeName string) Value {
+	if g, w := v.Kind(), KindScope; g != w {
+		panic(fmt.Sprintf("Value kind is %s, not %s", g, w))
+	}
+
+	return v.setScope(scopeName)
+}
+
+func (v Value) setScope(scopeName string) Value {
+	v.any = scopeName
+	v.num = KindScope
+
+	return v
 }
 
 // Kind is the kind of [Value].
