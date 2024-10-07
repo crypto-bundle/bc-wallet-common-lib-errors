@@ -76,12 +76,7 @@ func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) erro
 }
 
 func (s *serviceValuedWithDefaults) Error(err error, details ...string) error {
-	count := len(s.defaultValues)
-
-	valuesList := make([]Value, count)
-	copy(valuesList, s.defaultValues)
-
-	return ValuedError(err, valuesList, details...)
+	return s.ErrorOnly(err, details...)
 }
 
 func (s *serviceValuedWithDefaults) Errorf(err error,

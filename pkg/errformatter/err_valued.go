@@ -259,7 +259,7 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 func ValuedError(err error, values []Value, details ...string) *valuedError {
 	values = append(values, NewValue(KindDetails, details))
 
-	return MultiValuedErrorOnly(err, values...).setError(err)
+	return MultiValuedErrorOnly(err, values...)
 }
 
 // ValuedErrorf combines given error with details and finishes with caller func name, printf formatting...
