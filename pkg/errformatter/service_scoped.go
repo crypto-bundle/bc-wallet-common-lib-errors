@@ -32,10 +32,37 @@
 
 package errformatter
 
-var _ selfService = (*serviceScoped)(nil)
+var _ ErrorFormatterService = (*serviceScoped)(nil)
 
 type serviceScoped struct {
 	scope string
+}
+
+func (s *serviceScoped) ErrCodeIsOneOf(err error, codes ...int) (int, bool) {
+	return s.ErrorCodeIsOneOf(err, codes...)
+}
+
+func (s *serviceScoped) ErrorCodeIsOneOf(err error, codes ...int) (int, bool) {
+	errCode := s.ErrorGetCode(err)
+	if errCode == -1 {
+		return -1, false
+	}
+
+	for _, targetCode := range codes {
+		if targetCode == errCode {
+			return targetCode, true
+		}
+	}
+
+	return -1, false
+}
+
+func (s *serviceScoped) NewErrorWithCode(text string, code int) error {
+	return ValuedNewError([]Value{
+		NewValue(KindDetails, text),
+		NewValue(KindCode, code),
+		NewValue(KindScope, s.scope),
+	})
 }
 
 func (s *serviceScoped) ErrGetCode(err error) int {

@@ -32,12 +32,19 @@
 
 package errformatter
 
-//nolint:interfacebloat //it's ok here, we need it we must use it as one big interface
-type selfService interface {
+type errorCodeContainable interface {
 	ErrorWithCode(err error, code int) error
 	ErrWithCode(err error, code int) error
+	NewErrorWithCode(text string, code int) error
 	ErrorGetCode(err error) int
 	ErrGetCode(err error) int
+	ErrorCodeIsOneOf(err error, codes ...int) (int, bool)
+	ErrCodeIsOneOf(err error, codes ...int) (int, bool)
+}
+
+//nolint:interfacebloat //it's ok here, we need it we must use it as one big interface
+type ErrorFormatterService interface {
+	errorCodeContainable
 	// ErrorNoWrap function for pseudo-wrap error, must be used in case of linter warnings...
 	ErrorNoWrap(err error) error
 	// ErrNoWrap same with ErrorNoWrap function, just alias for ErrorNoWrap, just short function name...

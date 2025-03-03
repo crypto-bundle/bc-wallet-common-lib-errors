@@ -32,10 +32,36 @@
 
 package errformatter
 
-var _ selfService = (*service)(nil)
+var _ ErrorFormatterService = (*service)(nil)
 
 //nolint:gofumpt
 type service struct {
+}
+
+func (s *service) ErrCodeIsOneOf(err error, codes ...int) (int, bool) {
+	return s.ErrorCodeIsOneOf(err, codes...)
+}
+
+func (s *service) ErrorCodeIsOneOf(err error, codes ...int) (int, bool) {
+	errCode := s.ErrorGetCode(err)
+	if errCode == -1 {
+		return -1, false
+	}
+
+	for _, targetCode := range codes {
+		if targetCode == errCode {
+			return targetCode, true
+		}
+	}
+
+	return -1, false
+}
+
+func (s *service) NewErrorWithCode(text string, code int) error {
+	return ValuedNewError([]Value{
+		NewValue(KindDetails, text),
+		NewValue(KindCode, code),
+	})
 }
 
 func (s *service) ErrGetCode(err error) int {

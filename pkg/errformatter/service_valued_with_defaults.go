@@ -32,7 +32,7 @@
 
 package errformatter
 
-var _ selfService = (*serviceValuedWithDefaults)(nil)
+var _ ErrorFormatterService = (*serviceValuedWithDefaults)(nil)
 
 type serviceValuedWithDefaults struct {
 	*serviceValued
