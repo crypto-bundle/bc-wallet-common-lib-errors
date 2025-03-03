@@ -1,5 +1,11 @@
 # Change Log
 
+## [v0.0.9] - 04.03.2025
+### Added
+* Added code-contains error formatter as default library formatter
+* Added lib-tinyerrors library as basic dependency of lib-errors
+* Added code-contains errors formatter unit-tests
+
 ## [v0.0.7, v0.0.8] - 07.10.2024
 ### Fixed
 * Fixed bug with empty details list in re-wrap case

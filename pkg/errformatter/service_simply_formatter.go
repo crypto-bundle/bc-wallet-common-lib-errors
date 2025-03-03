@@ -112,6 +112,6 @@ func (s *service) NewErrorf(format string, args ...interface{}) error {
 	return NewErrorf(format, args...)
 }
 
-func NewErrorFormatter() *service {
+func NewErrorBasicFormatter() *service {
 	return &service{}
 }

@@ -38,20 +38,6 @@ import (
 	"strings"
 )
 
-//nolint:gochecknoglobals // it's ok
-var DefaultErrorFormatterSvc = errFmtSvc
-
-//nolint:gochecknoglobals // it's ok
-var errFmtSvc ErrorFormatterService = new(service)
-
-// Default returns the standard error formatted service-component...
-func Default() ErrorFormatterService { return DefaultErrorFormatterSvc }
-
-// SetDefault re-assign default errFmtSvc variable(default error formatter service) with by passed argument...
-func SetDefault(fmtSvc ErrorFormatterService) {
-	DefaultErrorFormatterSvc = fmtSvc
-}
-
 func ErrorNoWrap(err error) error {
 	if err == nil {
 		return nil
