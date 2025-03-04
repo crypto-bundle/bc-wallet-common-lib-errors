@@ -1,5 +1,10 @@
 # Change Log
 
+## [v0.0.10] - 04.03.2025
+### Changed
+* Bump version of lib-tinyerrors
+* Added support of Go 1.23
+
 ## [v0.0.9] - 04.03.2025
 ### Added
 * Added code-contains error formatter as default library formatter
