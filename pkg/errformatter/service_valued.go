@@ -32,9 +32,35 @@
 
 package errformatter
 
-var _ selfService = (*serviceValued)(nil)
+var _ ErrorFormatterService = (*serviceValued)(nil)
 
 type serviceValued struct{}
+
+func (s *serviceValued) ErrCodeIsOneOf(err error, codes ...int) (int, bool) {
+	return s.ErrorCodeIsOneOf(err, codes...)
+}
+
+func (s *serviceValued) ErrorCodeIsOneOf(err error, codes ...int) (int, bool) {
+	errCode := s.ErrorGetCode(err)
+	if errCode == -1 {
+		return -1, false
+	}
+
+	for _, targetCode := range codes {
+		if targetCode == errCode {
+			return targetCode, true
+		}
+	}
+
+	return -1, false
+}
+
+func (s *serviceValued) NewErrorWithCode(text string, code int) error {
+	return ValuedNewError([]Value{
+		NewValue(KindDetails, text),
+		NewValue(KindCode, code),
+	})
+}
 
 func (s *serviceValued) ErrGetCode(err error) int {
 	return s.ErrorGetCode(err)
@@ -84,7 +110,7 @@ func (s *serviceValued) NewErrorf(format string, args ...interface{}) error {
 	return ValuedNewErrorf(nil, format, args...)
 }
 
-func NewValuesErrorFormatter(values ...Value) selfService {
+func NewValuesErrorFormatter(values ...Value) ErrorFormatterService {
 	if len(values) > 0 {
 		return &serviceValuedWithDefaults{
 			serviceValued: &serviceValued{},
