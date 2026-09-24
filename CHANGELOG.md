@@ -1,5 +1,12 @@
 # Change Log
 
+## [Unreleased]
+
+### Changed
+* Upgraded minimum Go version from 1.23 to 1.27
+* Bumped `bc-wallet-common-lib-tinyerrors` from `v0.0.3` to `v0.0.5`
+* Updated `go.sum` and `vendor/` via `go mod tidy && go mod vendor`
+
 ## [v0.0.10] - 04.03.2025
 ### Changed
 * Bump version of lib-tinyerrors

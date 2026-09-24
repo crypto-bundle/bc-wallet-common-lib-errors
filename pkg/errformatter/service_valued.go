@@ -32,14 +32,22 @@
 
 package errformatter
 
-var _ ErrorFormatterService = (*serviceValued)(nil)
-
+// serviceValued attaches Value-typed metadata to errors. Details, scope, code,
+// and public-code information flows through the Valued* helper functions
+// defined in the package.
 type serviceValued struct{}
 
+var _ ErrorFormatterService = (*serviceValued)(nil)
+
+// ErrCodeIsOneOf is a short alias for ErrorCodeIsOneOf.
+// Implements ErrorFormatterService.ErrCodeIsOneOf.
 func (s *serviceValued) ErrCodeIsOneOf(err error, codes ...int) (int, bool) {
 	return s.ErrorCodeIsOneOf(err, codes...)
 }
 
+// ErrorCodeIsOneOf reports whether err carries a code present in codes.
+// Returns the matched code (or -1).
+// Implements ErrorFormatterService.ErrorCodeIsOneOf.
 func (s *serviceValued) ErrorCodeIsOneOf(err error, codes ...int) (int, bool) {
 	errCode := s.ErrorGetCode(err)
 	if errCode == -1 {
@@ -55,6 +63,9 @@ func (s *serviceValued) ErrorCodeIsOneOf(err error, codes ...int) (int, bool) {
 	return -1, false
 }
 
+// NewErrorWithCode creates a new error carrying details and code, no wrapper.
+// Panics if code <= 0.
+// Implements ErrorFormatterService.NewErrorWithCode.
 func (s *serviceValued) NewErrorWithCode(text string, code int) error {
 	return ValuedNewError([]Value{
 		NewValue(KindDetails, text),
@@ -62,26 +73,41 @@ func (s *serviceValued) NewErrorWithCode(text string, code int) error {
 	})
 }
 
+// ErrGetCode is a short alias for ErrorGetCode.
+// Implements ErrorFormatterService.ErrGetCode.
 func (s *serviceValued) ErrGetCode(err error) int {
 	return s.ErrorGetCode(err)
 }
 
+// ErrorGetCode extracts the embedded error code from err. Returns -1
+// when the error does not carry a code.
+// Implements ErrorFormatterService.ErrorGetCode.
 func (s *serviceValued) ErrorGetCode(err error) int {
 	return ValuedErrorGetCode(err)
 }
 
+// ErrWithCode is a short alias for ErrorWithCode.
+// Implements ErrorFormatterService.ErrWithCode.
 func (s *serviceValued) ErrWithCode(err error, code int) error {
 	return s.ErrorWithCode(err, code)
 }
 
+// ErrNoWrap is a short alias for ErrorNoWrap.
+// Implements ErrorFormatterService.ErrNoWrap.
 func (s *serviceValued) ErrNoWrap(err error) error {
 	return s.ErrorNoWrap(err)
 }
 
+// ErrorNoWrap wraps err with formatting details but does NOT chain err
+// as Inner(). Callers who need a clean output use this method.
+// Implements ErrorFormatterService.ErrorNoWrap.
 func (s *serviceValued) ErrorNoWrap(err error) error {
 	return ErrorNoWrap(err)
 }
 
+// ErrorWithCode creates an error wrapping err that carries the given
+// positive code. If code <= 0 the call panics.
+// Implements ErrorFormatterService.ErrorWithCode.
 func (s *serviceValued) ErrorWithCode(err error, code int) error {
 	if code <= 0 {
 		panic("errfmt: code must be positive value")
@@ -90,26 +116,39 @@ func (s *serviceValued) ErrorWithCode(err error, code int) error {
 	return ValuedErrorOnly(err, NewValue(KindCode, code))
 }
 
+// ErrorOnly wraps err with detail strings wrapped in a KindDetails Value.
+// Implements ErrorFormatterService.ErrorOnly.
 func (s *serviceValued) ErrorOnly(err error, details ...string) error {
 	return ValuedErrorOnly(err, NewValue(KindDetails, details))
 }
 
+// Errorf formats err with a printf-style string and arguments.
+// Implements ErrorFormatterService.Errorf.
 func (s *serviceValued) Errorf(err error, format string, args ...interface{}) error {
 	return ValuedErrorf(err, nil, format, args...)
 }
 
+// Error wraps err with detail strings wrapped in a KindDetails Value.
+// Implements ErrorFormatterService.Error.
 func (s *serviceValued) Error(err error, details ...string) error {
 	return ValuedError(err, nil, details...)
 }
 
+// NewError creates a new error (no wrapper) from detail strings.
+// Implements ErrorFormatterService.NewError.
 func (s *serviceValued) NewError(details ...string) error {
 	return ValuedNewError(nil, details...)
 }
 
+// NewErrorf creates a new error (no wrapper) from a format string.
+// Implements ErrorFormatterService.NewErrorf.
 func (s *serviceValued) NewErrorf(format string, args ...interface{}) error {
 	return ValuedNewErrorf(nil, format, args...)
 }
 
+// NewValuesErrorFormatter returns an ErrorFormatterService that attaches
+// the provided values to every formatted error. If values is non-empty
+// the result is a serviceValuedWithDefaults; otherwise a plain serviceValued.
 func NewValuesErrorFormatter(values ...Value) ErrorFormatterService {
 	if len(values) > 0 {
 		return &serviceValuedWithDefaults{

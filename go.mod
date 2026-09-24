@@ -1,5 +1,5 @@
 module github.com/crypto-bundle/bc-wallet-common-lib-errors
 
-go 1.23
+go 1.27
 
-require github.com/crypto-bundle/bc-wallet-common-lib-tinyerrors v0.0.3
+require github.com/crypto-bundle/bc-wallet-common-lib-tinyerrors v0.0.5
