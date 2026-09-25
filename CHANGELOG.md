@@ -7,9 +7,6 @@
 * Updated `go.sum` and `vendor/` via `go mod tidy && go mod vendor`
 * Renamed `NewValuesErrorFormatter` to `NewValuedErrorFormatter`; old name kept as deprecated alias
 
-### Added
-* Added examples and documentation for errorCodeContainable methods (`ErrorWithCode`, `NewErrorWithCode`, `ErrorGetCode`, `ErrorCodeIsOneOf`)
-
 ## [v0.0.10] - 04.03.2025
 ### Changed
 * Bump version of lib-tinyerrors
