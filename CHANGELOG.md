@@ -11,13 +11,6 @@
 ### Added
 * Added examples and documentation for errorCodeContainable methods (`ErrorWithCode`, `NewErrorWithCode`, `ErrorGetCode`, `ErrorCodeIsOneOf`)
 
-## [v0.0.11] - 25.09.2026
-### Changed
-* Renamed `NewValuesErrorFormatter` to `NewValuedErrorFormatter`
-
-### Added
-* Added usage examples for errorCodeContainable methods across all formatters
-
 ## [v0.0.10] - 04.03.2025
 ### Changed
 * Bump version of lib-tinyerrors
