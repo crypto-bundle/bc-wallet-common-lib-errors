@@ -3,7 +3,7 @@
 ## [v0.0.11] - 25.09.2026
 ### Changed
 * Upgraded minimum Go version from 1.23 to 1.27
-* Bumped `bc-wallet-common-lib-tinyerrors` from `v0.0.3` to `v0.0.5`
+* Bumped `bc-wallet-common-lib-tinyerrors` from `v0.0.3` to `v0.0.6`
 * Function `NewValuesErrorFormatter` moved to deprecated, now use `NewValuedErrorFormatter` function
 
 ## [v0.0.10] - 04.03.2025
