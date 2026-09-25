@@ -91,7 +91,7 @@ type ErrorFormatterService interface {
 type ErrorFormatterBuilder interface {
 	// MakeScoped returns a scope-prefixed formatter. Same as NewScopedErrorFormatter.
 	MakeScoped(scope string) ErrorFormatterService
-	// MakeValued returns a value-based formatter initialized with vals. Same as NewValuesErrorFormatter.
+	// MakeValued returns a value-based formatter initialized with vals. Same as NewValuedErrorFormatter.
 	MakeValued(values ...Value) ErrorFormatterService
 	// MakeSimply returns the basic formatter. Same as NewErrorBasicFormatter.
 	MakeSimply() ErrorFormatterService
@@ -106,9 +106,33 @@ type ErrorFormatterBuilder interface {
 |---|---|---|
 | `*service` | Basic default formatter (delegates to stdlib functions) | `NewErrorBasicFormatter()` |
 | `*serviceScoped` | Scope-prefixed errors (e.g., `[wallet] ...`) | `NewScopedErrorFormatter(scope)` |
-| `*serviceValued` | Value-based fields (KindDetails, KindScope, KindCode, KindPublicCode) — **Universal** solution carrying all four value kinds simultaneously | `NewValuesErrorFormatter(values...)` |
-| `*serviceValuedWithDefaults` | Like Valued but carries default Values across every call unless overridden | `NewValuesErrorFormatter(defaultValues...)` |
+| `*serviceValued` | Value-based fields (KindDetails, KindScope, KindCode, KindPublicCode) — **Universal** solution carrying all four value kinds simultaneously | `NewValuedErrorFormatter(values...)` |
+| `*serviceValuedWithDefaults` | Like Valued but carries default Values across every call unless overridden | `NewValuedErrorFormatter(defaultValues...)` |
 | *(code contains wrapper)* | Wraps inner service; searches for matching error codes via `tinyerrors.FmtService` | `NewErrorFormatter()` / `Default()` + `SetDefault()` |
+
+> **Note:** `NewValuesErrorFormatter` is deprecated; use `NewValuedErrorFormatter` instead (they are functionally identical).
+
+### errorCodeContainable Methods
+
+All formatters expose seven error-code-aware operations via the embedded `errorCodeContainable` interface:
+
+| Method | Purpose | Example |
+|--------|---------|---------|
+| `ErrorWithCode(err, code)` | Wrap error with positive code | `svc.ErrorWithCode(db.ErrNotFound, 40401)` |
+| `ErrWithCode(err, code)` | Short alias | `svc.ErrWithCode(err, 40401)` |
+| `NewErrorWithCode(text, code)` | Create fresh error with text + code | `svc.NewErrorWithCode("not found", 40401)` |
+| `ErrorGetCode(err)` | Extract code from error | `svc.ErrorGetCode(err)` → `40401` |
+| `ErrGetCode(err)` | Short alias | `svc.ErrGetCode(err)` |
+| `ErrorCodeIsOneOf(err, codes...)` | Check if err carries one of given codes | `svc.ErrorCodeIsOneOf(err, 40401, 50001)` |
+| `ErrCodeIsOneOf(err, codes...)` | Short alias | `svc.ErrCodeIsOneOf(err, ...)` |
+
+Example: checking specific error codes at a call site:
+
+```go
+if code, ok := svc.ErrCodeIsOneOf(err, int(FeeTooLow), int(BlockInvalid)); ok {
+    log.Warnf("matched error code %d", code)
+}
+```
 
 All implement `ErrorFormatterService`. Callers interact exclusively through the public factory constructors listed above.
 

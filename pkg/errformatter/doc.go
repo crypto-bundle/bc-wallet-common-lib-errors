@@ -26,7 +26,7 @@ Types
 
 	    NewErrorFormatter()          — default / simply-formatted
 	    NewScopedErrorFormatter(s)   — scope-prefixed
-	    NewValuesErrorFormatter(vs…) — value-based
+	    NewValuesErrorFormatter(vs…) — value-based (**Deprecated**, use NewValuedErrorFormatter)
 
 	  All other methods on ErrorFormatterService follow a consistent pattern:
 	  ErrorNoWrap / ErrNoWrap, ErrorOnly / ErrOnly, Error / Err, Errorf,
@@ -68,9 +68,10 @@ Choose a formatter strategy based on your needs:
 	svc := errfmt.NewScopedErrorFormatter("wallet")
 
 	// Valued (UNIVERSAL) — Error Scope + Code + Detail + Public Code in one type
-	svc := errfmt.NewValuesErrorFormatter(vs...)
+	svc := errfmt.NewValuedErrorFormatter(vs...)
 
-NewValuesErrorFormatter is recommended as the default when in doubt — it
+> **Note:** `NewValuesErrorFormatter` is deprecated; use `NewValuedErrorFormatter` instead (they are functionally identical).
+NewValuedErrorFormatter is recommended as the default when in doubt — it
 is the single universal formatter carrying all four value types (details,
 scope, code, public code) and inspectable at runtime via ValuedErrorGetCode.
 
@@ -89,6 +90,25 @@ reuse the same configured instance across all methods in that component.
 **Runtime inspection.** Use ValuedErrorGetCode(err) to extract error codes at call sites.
 Errors produced by Valued* helpers satisfy errors.As(*valuedError) for rich introspection.
 
+**Error-code operations.** Use the built-in errorCodeContainable methods on your formatter instance rather than standalone helpers. They carry strategy-specific formatting logic and are consistent across all formatters:
+
+	// Attach a code to a wrapped error:
+	return svc.ErrorWithCode(db.ErrRecordNotFound, int(ErrorAccountLocked))
+
+	// Create a fresh error with text + embedded code:
+	return svc.NewErrorWithCode("transaction rejected", int(ErrorTxRejected))
+
+	// Extract code at call site:
+	if code := svc.ErrorGetCode(err); code == int(ErrorAccountLocked) {
+		// handle locked account
+	}
+
+	// Check against multiple possible codes:
+	codes := []int{int(ErrorLocked), int(ErrorFrozen)}
+	if matched, found := svc.ErrorCodeIsOneOf(err, codes...); found {
+		// matched is the matched code value, or -1 if no match
+	}
+
 **Re-wrap over re-create.** When wrapping an existing *valuedError prefer MultiValuedErrorOnly
 so internal Bits state is preserved instead of losing metadata on a fresh allocation.
 
@@ -104,8 +124,37 @@ periods on first line. Do not document receiver methods or internal services.
 Do not add blanket nolint overrides — justify each new directive inline with the affected linter(s).
 
 **No factory additions.** All creation goes through three constructors:
-NewErrorBasicFormatter(), NewScopedErrorFormatter(scope), NewValuesErrorFormatter(values…).
-Adding new factories or builders requires justification and approval.
+NewErrorBasicFormatter(), NewScopedErrorFormatter(scope),
+NewValuedErrorFormatter(values…). Adding new factories or builders requires
+justification and approval.
+
+**Using NewValuedErrorFormatter as a service component.**
+When you call `NewValuedErrorFormatter(vs...)` you get back an instance that
+implements `ErrorFormatterService`. Once created, reuse it everywhere in the
+same responsibility scope — do not call the constructor again from inside methods.
+The returned formatter supports the full method family:
+
+	// Create once (package-level or injected into your struct):
+	svc := errfmt.NewValuedErrorFormatter(
+		errfmt.NewValue(errfmt.KindScope, "wallet"),
+	)
+
+	// Use ErrorOnly() — wraps existing error, appends details:
+	return svc.ErrorOnly(err, "amount exceeded limit")
+
+	// Use Errorf() — printf-style detail injection:
+	return svc.Errorf("balance %d below minimum", bal)
+
+	// Use NewErrorf() — creates fresh error without wrapping:
+	return svc.NewErrorf("account %s frozen", accountID)
+
+	// Use ErrorNoWrap() — returns inner error unchanged:
+	return svc.ErrorNoWrap(rawErr)
+
+All methods delegate to the same internal `fmtService` implementation. The Valued
+formatter adds **Error Scope + Code + Detail + Public Code** simultaneously, making it
+the single universal choice when runtime code extraction via
+`ValuedErrorGetCode(err)` is needed.
 
 Internal Formatters (unexported)
 

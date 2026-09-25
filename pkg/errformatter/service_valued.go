@@ -152,6 +152,7 @@ func newValuedErrFmtService(values ...Value) ErrorFormatterService {
 	return &serviceValued{}
 }
 
+// Deprecated: Use NewValuedErrorFormatter instead. NewValuesErrorFormatter will be removed in the next minor release.
 // NewValuesErrorFormatter returns an ErrorFormatterService that attaches
 // the provided values to every formatted error. If values is non-empty
 // the result is a serviceValuedWithDefaults; otherwise a plain serviceValued.
