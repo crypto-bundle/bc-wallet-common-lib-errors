@@ -6,6 +6,17 @@
 * Upgraded minimum Go version from 1.23 to 1.27
 * Bumped `bc-wallet-common-lib-tinyerrors` from `v0.0.3` to `v0.0.5`
 * Updated `go.sum` and `vendor/` via `go mod tidy && go mod vendor`
+* Renamed `NewValuesErrorFormatter` to `NewValuedErrorFormatter`; old name kept as deprecated alias
+
+### Added
+* Added examples and documentation for errorCodeContainable methods (`ErrorWithCode`, `NewErrorWithCode`, `ErrorGetCode`, `ErrorCodeIsOneOf`)
+
+## [v0.0.11] - 25.09.2026
+### Changed
+* Renamed `NewValuesErrorFormatter` to `NewValuedErrorFormatter`
+
+### Added
+* Added usage examples for errorCodeContainable methods across all formatters
 
 ## [v0.0.10] - 04.03.2025
 ### Changed
