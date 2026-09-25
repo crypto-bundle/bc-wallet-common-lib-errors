@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+
+# ---- Build-stage image for test + lint execution ----
+# Purpose: reproducible local container for running `go test` and `make lint`
+# This repo is a library; no scratch image needed since it has external deps.
+
+ARG GO_VERSION=1.27
+ARG GOLANGCI_LINT_VERSION=v1.64.6
+
+FROM golang:${GO_VERSION}-alpine AS base
+
+# Install system dependencies (git needed by go mod download / golangci-lint installer)
+RUN apk add --no-cache git ca-certificates curl make
+
+# Install golangci-lint
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | \
+    sh -s -- -b /usr/local/bin ${GOLANGCI_LINT_VERSION}
+
+WORKDIR /src
+
+# Copy module files first for better layer caching
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the rest of the source
+COPY . .
+
+# Default command: run tests + lint
+CMD ["sh", "-c", "go test ./pkg/errformatter/... && make lint"]

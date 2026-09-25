@@ -12,6 +12,8 @@
 *.out
 
 .idea
+.qwen
+.agents
 
 # Dependency directories (remove the comment below to include it)
 vendor/

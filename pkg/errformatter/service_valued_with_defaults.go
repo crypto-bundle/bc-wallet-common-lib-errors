@@ -1,0 +1,131 @@
+// MIT NON-AI License
+//
+// Copyright (c) 2022-2026 Aleksei Kotelnikov(gudron2s@gmail.com)
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of the software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions.
+//
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+//
+// In addition, the following restrictions apply:
+//
+// 1. The Software and any modifications made to it may not be used for the purpose of training or improving machine learning algorithms,
+// including but not limited to artificial intelligence, natural language processing, or data mining. This condition applies to any derivatives,
+// modifications, or updates based on the Software code. Any usage of the Software in an AI-training dataset is considered a breach of this License.
+//
+// 2. The Software may not be included in any dataset used for training or improving machine learning algorithms,
+// including but not limited to artificial intelligence, natural language processing, or data mining.
+//
+// 3. Any person or organization found to be in violation of these restrictions will be subject to legal action and may be held liable
+// for any damages resulting from such use.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+// OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+package errformatter
+
+// serviceValuedWithDefaults extends serviceValued by carrying default Values
+// across every call unless explicitly overridden. The defaultValues slice is
+// prepended to any values supplied at call time.
+var _ ErrorFormatterService = (*serviceValuedWithDefaults)(nil)
+
+// serviceValuedWithDefaults extends serviceValued by carrying default Values
+// across every call unless explicitly overridden. The defaultValues slice is
+// prepended to any values supplied at call time.
+type serviceValuedWithDefaults struct {
+	*serviceValued
+	defaultValues []Value
+}
+
+// ErrWithCode is a short alias for ErrorWithCode.
+// Implements ErrorFormatterService.ErrWithCode.
+func (s *serviceValuedWithDefaults) ErrWithCode(err error, code int) error {
+	return s.ErrorWithCode(err, code)
+}
+
+// ErrorWithCode creates an error wrapping err that carries the given
+// positive code, plus all default Values. If code <= 0 the call panics.
+// Implements ErrorFormatterService.ErrorWithCode.
+func (s *serviceValuedWithDefaults) ErrorWithCode(err error, code int) error {
+	if code <= 0 {
+		panic("errfmt: code must be positive value")
+	}
+
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count+1)
+	copy(valuesList, s.defaultValues)
+	valuesList[count] = NewValue(KindCode, code)
+
+	return MultiValuedErrorOnly(err, valuesList...)
+}
+
+// ErrorOnly wraps err with the provided detail strings wrapped in a KindDetails
+// Value, plus all default Values. If no details are given only defaults are used.
+// Implements ErrorFormatterService.ErrorOnly.
+func (s *serviceValuedWithDefaults) ErrorOnly(err error, details ...string) error {
+	count := len(s.defaultValues)
+
+	if len(details) > 0 {
+		valuesList := make([]Value, count+1)
+		copy(valuesList[:count], s.defaultValues)
+
+		valuesList[count] = NewValue(KindDetails, details)
+
+		return MultiValuedErrorOnly(err, valuesList...)
+	}
+
+	valuesList := make([]Value, count)
+	copy(valuesList[:count], s.defaultValues)
+
+	return MultiValuedErrorOnly(err, valuesList...)
+}
+
+// Error wraps err with details, applying additional formatting specific
+// to the concrete service strategy. Delegates to ErrorOnly internally.
+// Implements ErrorFormatterService.Error.
+func (s *serviceValuedWithDefaults) Error(err error, details ...string) error {
+	return s.ErrorOnly(err, details...)
+}
+
+// Errorf formats err with a printf-style string and arguments, plus all
+// default Values attached.
+// Implements ErrorFormatterService.Errorf.
+func (s *serviceValuedWithDefaults) Errorf(err error,
+	format string,
+	args ...interface{},
+) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedErrorf(err, valuesList, format, args...)
+}
+
+// NewError creates a new error (no wrapper) from detail strings, plus all
+// default Values attached.
+// Implements ErrorFormatterService.NewError.
+func (s *serviceValuedWithDefaults) NewError(details ...string) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedNewError(valuesList, details...)
+}
+
+// NewErrorf creates a new error (no wrapper) from a format string, plus all
+// default Values attached.
+// Implements ErrorFormatterService.NewErrorf.
+func (s *serviceValuedWithDefaults) NewErrorf(format string, args ...interface{}) error {
+	count := len(s.defaultValues)
+
+	valuesList := make([]Value, count)
+	copy(valuesList, s.defaultValues)
+
+	return ValuedNewErrorf(valuesList, format, args...)
+}
