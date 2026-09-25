@@ -28,8 +28,8 @@ The library wraps `fmtService` implementations via the `ErrorFormatterService` i
 
 | Component | Value | Notes |
 |---|---|---|
-| Language | Go 1.23 | Current `go.mod` directive; verify before bumping |
-| Dependencies | `github.com/crypto-bundle/bc-wallet-common-lib-tinyerrors v0.0.3` | Only external dep; stdlib elsewhere |
+| Language | Go 1.27 | Current `go.mod` directive; verify before bumping |
+| Dependencies | `github.com/crypto-bundle/bc-wallet-common-lib-tinyerrors v0.0.5` | Only external dep; stdlib elsewhere |
 | Linter | golangci-lint | ~100+ linters enabled in `.golangci.yml` |
 | Build | Makefile | Single `lint` target; runs `golangci-lint run --config .golangci.yml -v ./pkg/errformatter/` |
 | Module Mode | vendor (`vendor/` directory present) | Use `go mod vendor` after dependency changes |
@@ -87,26 +87,30 @@ type ErrorFormatterService interface {
     NewErrorf(format string, args ...interface{}) error
 }
 
-// ErrorFormatterBuilder — creates configured formatter instances.
+// ErrorFormatterBuilder — creates configured formatter instances via public factory constructors.
 type ErrorFormatterBuilder interface {
-    MakeScoped(scope string) ErrorFormatterService
-    MakeValued(values ...Value) ErrorFormatterService
-    MakeSimply() ErrorFormatterService
-    Make() ErrorFormatterService
+	// MakeScoped returns a scope-prefixed formatter. Same as NewScopedErrorFormatter.
+	MakeScoped(scope string) ErrorFormatterService
+	// MakeValued returns a value-based formatter initialized with vals. Same as NewValuesErrorFormatter.
+	MakeValued(values ...Value) ErrorFormatterService
+	// MakeSimply returns the basic formatter. Same as NewErrorBasicFormatter.
+	MakeSimply() ErrorFormatterService
+	// Make returns the default formatter. Same as NewErrorBasicFormatter.
+	Make() ErrorFormatterService
 }
 ```
 
 ### Service Implementations
 
-| Internal Type | Purpose | Constructor |
+| Internal Type | Purpose | Public Factory Constructor |
 |---|---|---|
-| `service` | Basic default formatter (delegates to stdlib functions) | `NewErrorBasicFormatter()` |
-| `serviceScoped` | Scope-prefixed errors (e.g., `[wallet] ...`) | `NewScopedErrorFormatter(scope)` |
-| `*serviceValued` | Value-based fields (KindDetails, KindScope, KindCode, KindPublicCode) | via builder / direct construction |
-| `serviceValuedWithDefaults` | Like Valued but always carries default values | `NewErrValuedWithDefaults(defaultValues...)` |
-| *(code contains wrapper)* | Wraps inner service; searches for matching error codes | via builder |
+| `*service` | Basic default formatter (delegates to stdlib functions) | `NewErrorBasicFormatter()` |
+| `*serviceScoped` | Scope-prefixed errors (e.g., `[wallet] ...`) | `NewScopedErrorFormatter(scope)` |
+| `*serviceValued` | Value-based fields (KindDetails, KindScope, KindCode, KindPublicCode) — **Universal** solution carrying all four value kinds simultaneously | `NewValuesErrorFormatter(values...)` |
+| `*serviceValuedWithDefaults` | Like Valued but carries default Values across every call unless overridden | `NewValuesErrorFormatter(defaultValues...)` |
+| *(code contains wrapper)* | Wraps inner service; searches for matching error codes via `tinyerrors.FmtService` | `NewErrorFormatter()` / `Default()` + `SetDefault()` |
 
-All implement `ErrorFormatterService`.
+All implement `ErrorFormatterService`. Callers interact exclusively through the public factory constructors listed above.
 
 ### Value System
 
@@ -118,16 +122,6 @@ type Kind uint  // KindEmpty, KindDetails, KindScope, KindCode, KindPublicCode
 ```
 
 Each `Value` has a `Bits` bitmask (Set/Clear/Toggle/Has) for efficient state tracking.
-
-### Builder Pattern
-
-`builder.go` provides construction helpers:
-```go
-NewErrValuedWithDefaults(...).
-    WithScope(...).
-    WithCode(...).
-    Build()
-```
 
 ### Delegation Design
 
@@ -208,9 +202,11 @@ Important settings:
 
 ## 11. Examples
 
-This repository does NOT contain example applications. Example implementations (HTTP server, gRPC, game engine) live in the parent/dependency repository `bc-wallet-common-lib-tinyerrors`.
+Usage examples are provided in [README.md](./README.md) under the **Usage** section, including:
+- Scoped formatter per service (wallet/service/wallet.go pattern)
+- Valued formatter with code inspection (blockchain pattern)
 
-To reference working usage patterns, clone `tinyerrors` separately and examine its examples directory.
+These demonstrate creating formatted instances per responsibility scope and using `ValuedErrorGetCode` for runtime code extraction. Additional patterns live in the dependency repository `bc-wallet-common-lib-tinyerrors`.
 
 ## 12. Contributing
 

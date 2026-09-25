@@ -40,6 +40,73 @@ Types
 	ErrorScoped — exported facade wrapping scopedError, returned by the
 	              ScopedError* family of helpers.
 
+# Usage recommendation
+
+For structured error handling, use service-component formatters via
+ErrorFormatterService methods rather than standalone helper functions.
+This gives consistent formatting and allows dependency injection of
+the formatter in tests.
+
+Create a separate formatter instance for each distinct service scope
+so that every layer prefixes errors with its own responsibility tag.
+Reuse the same instance across all methods in that component.
+
+	// wallet/service/wallet.go — package-level scoped formatter
+	var walletFmt = errfmt.NewScopedErrorFormatter("wallet")
+
+	func Transfer(ctx context.Context, from, to string, amount int64) error {
+		walletFmt.ErrorOnly(db.ErrRecordNotFound, "source account not found")
+		// -> "[wallet] source account not found"
+	}
+
+Choose a formatter strategy based on your needs:
+
+	// Simply formatted — quick ad-hoc errors without metadata
+	svc := errfmt.NewErrorBasicFormatter()
+
+	// Scoped — domain-layer errors where scope prefix matters ([wallet], [network], ...)
+	svc := errfmt.NewScopedErrorFormatter("wallet")
+
+	// Valued (UNIVERSAL) — Error Scope + Code + Detail + Public Code in one type
+	svc := errfmt.NewValuesErrorFormatter(vs...)
+
+NewValuesErrorFormatter is recommended as the default when in doubt — it
+is the single universal formatter carrying all four value types (details,
+scope, code, public code) and inspectable at runtime via ValuedErrorGetCode.
+
+# Agent instructions
+
+When modifying or writing code in this package follow these rules:
+
+**Formatter selection.** Prefer NewValuesErrorFormatter unless simplicity is required.
+It carries KindDetails + KindScope + KindCode + KindPublicCode simultaneously — no
+strategy-switching mid-stack is ever needed.
+
+**One instance per scope.** Create a package-level formatter var for each responsibility
+boundary (wallet, network, blockchain). Do not pass scope strings through every call site;
+reuse the same configured instance across all methods in that component.
+
+**Runtime inspection.** Use ValuedErrorGetCode(err) to extract error codes at call sites.
+Errors produced by Valued* helpers satisfy errors.As(*valuedError) for rich introspection.
+
+**Re-wrap over re-create.** When wrapping an existing *valuedError prefer MultiValuedErrorOnly
+so internal Bits state is preserved instead of losing metadata on a fresh allocation.
+
+**Pseudo-wrap vs real-wrap.** Most formatters build formatted strings via fmtService methods;
+they do NOT use errors.Wrap — they produce "pseudo-wraps" (text concatenation before %w).
+Use ErrorNoWrap when callers need clean output without chain accumulation.
+
+**Godoc convention.** Every exported top-level function must carry a single-sentence godoc
+comment starting with the function name. Match existing style — terse, imperative, no trailing
+periods on first line. Do not document receiver methods or internal services.
+
+**Nolint discipline.** Preserve existing //nolint directives unless their rule has changed.
+Do not add blanket nolint overrides — justify each new directive inline with the affected linter(s).
+
+**No factory additions.** All creation goes through three constructors:
+NewErrorBasicFormatter(), NewScopedErrorFormatter(scope), NewValuesErrorFormatter(values…).
+Adding new factories or builders requires justification and approval.
+
 Internal Formatters (unexported)
 
 These structs implement ErrorFormatterService but are not exposed directly.

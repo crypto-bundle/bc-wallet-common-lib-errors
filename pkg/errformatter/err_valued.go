@@ -1,34 +1,29 @@
-/*
- *
- *
- * MIT NON-AI License
- *
- * Copyright (c) 2022-2024 Aleksei Kotelnikov(gudron2s@gmail.com)
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of the software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions.
- *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- *
- * In addition, the following restrictions apply:
- *
- * 1. The Software and any modifications made to it may not be used for the purpose of training or improving machine learning algorithms,
- * including but not limited to artificial intelligence, natural language processing, or data mining. This condition applies to any derivatives,
- * modifications, or updates based on the Software code. Any usage of the Software in an AI-training dataset is considered a breach of this License.
- *
- * 2. The Software may not be included in any dataset used for training or improving machine learning algorithms,
- * including but not limited to artificial intelligence, natural language processing, or data mining.
- *
- * 3. Any person or organization found to be in violation of these restrictions will be subject to legal action and may be held liable
- * for any damages resulting from such use.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
- * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- */
+// MIT NON-AI License
+//
+// Copyright (c) 2022-2026 Aleksei Kotelnikov(gudron2s@gmail.com)
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of the software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions.
+//
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+//
+// In addition, the following restrictions apply:
+//
+// 1. The Software and any modifications made to it may not be used for the purpose of training or improving machine learning algorithms,
+// including but not limited to artificial intelligence, natural language processing, or data mining. This condition applies to any derivatives,
+// modifications, or updates based on the Software code. Any usage of the Software in an AI-training dataset is considered a breach of this License.
+//
+// 2. The Software may not be included in any dataset used for training or improving machine learning algorithms,
+// including but not limited to artificial intelligence, natural language processing, or data mining.
+//
+// 3. Any person or organization found to be in violation of these restrictions will be subject to legal action and may be held liable
+// for any damages resulting from such use.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+// OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package errformatter
 
@@ -205,6 +200,8 @@ func (e *valuedError) reWrapByValues(values ...Value) *valuedError {
 	}
 }
 
+// ValuedErrorGetCode extracts the embedded error code from err via errors.As(*valuedError).
+// Returns ValueCodeMissing (-1) when err does not carry a valuedError.
 func ValuedErrorGetCode(err error) int {
 	var vErr *valuedError
 
@@ -215,7 +212,9 @@ func ValuedErrorGetCode(err error) int {
 	return vErr.getCode()
 }
 
-// ValuedErrorOnly combines given error with given Value, all Value type values must contain pre-reserved Kind...
+// ValuedErrorOnly wraps err with a single Value containing a typed metadata field (Kind).
+// If err is already a *valuedError it reWraps it with the new value; otherwise a fresh
+// *valuedError is created and set with the passed value. If err is nil it returns nil.
 func ValuedErrorOnly(err error, value Value) *valuedError {
 	if err == nil {
 		return nil
@@ -228,14 +227,16 @@ func ValuedErrorOnly(err error, value Value) *valuedError {
 
 	vErr = &valuedError{
 		Err:     nil,
-		values:  [4]Value{},
+		values:  [MaxKindValue]Value{},
 		settled: 0,
 	}
 
 	return vErr.setValue(value).setError(err)
 }
 
-// MultiValuedErrorOnly combines given error with given Value list, all Value type values must contain pre-reserved Kind...
+// MultiValuedErrorOnly wraps err with multiple Values containing typed metadata fields.
+// If err is already a *valuedError it reWraps it with all new values; otherwise a fresh
+// *valuedError is created and batch-set with the passed values. If err is nil it returns nil.
 func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 	if err == nil {
 		return nil
@@ -248,25 +249,31 @@ func MultiValuedErrorOnly(err error, value ...Value) *valuedError {
 
 	vErr = &valuedError{
 		Err:     nil,
-		values:  [4]Value{},
+		values:  [MaxKindValue]Value{},
 		settled: 0,
 	}
 
 	return vErr.setValues(value...).setError(err)
 }
 
-// ValuedError combines given error with details and finishes with caller func name, printf formatting...
+// ValuedError combines err with detail strings and a list of typed Values.
+// Appends a new KindDetails Value from the supplied details before delegating to
+// MultiValuedErrorOnly. This is the primary entry point for constructing richly
+// typed errors carrying Error Scope, Code, Detail, and Public Code simultaneously.
 func ValuedError(err error, values []Value, details ...string) *valuedError {
 	values = append(values, NewValue(KindDetails, details))
 
 	return MultiValuedErrorOnly(err, values...)
 }
 
-// ValuedErrorf combines given error with details and finishes with caller func name, printf formatting...
+// ValuedErrorf is the printf-style variant of ValuedError. Formats a detail message
+// with the given format string and arguments, then delegates to ValuedError.
+// If err is already a *valuedError it updates the inner error via ErrorOnly and
+// replaces values; otherwise creates a fresh *valuedError. If err is nil it returns nil.
 func ValuedErrorf(err error,
 	values []Value,
 	format string,
-	args ...interface{},
+	args ...any,
 ) *valuedError {
 	if err == nil {
 		return nil
@@ -281,16 +288,19 @@ func ValuedErrorf(err error,
 
 	vErr = &valuedError{
 		Err:     ErrorOnly(err, fmt.Sprintf(format, args...)),
-		values:  [4]Value{},
+		values:  [MaxKindValue]Value{},
 		settled: 0,
 	}
 
 	return vErr.setValues(values...)
 }
 
-// ValuedNewError combines given error with details and finishes with caller func name, printf formatting...
+// ValuedNewError creates a brand-new error (wrapping nothing) enriched with typed Values
+// and detail strings. The returned *valuedError carries all four value kinds simultaneously:
+// KindDetails, KindScope, KindCode, and KindPublicCode. Use this when there is no underlying
+// error to wrap — just a formatted message with structured metadata.
 //
-//nolint:err113
+//nolint:err113 // direct error creation is intentional here.
 func ValuedNewError(values []Value, details ...string) *valuedError {
 	var vErr valuedError
 
@@ -299,10 +309,12 @@ func ValuedNewError(values []Value, details ...string) *valuedError {
 	return vErr.setValues(values...).setError(newErr)
 }
 
-// ValuedNewErrorf combines given error with details and finishes with caller func name, printf formatting...
+// ValuedNewErrorf is the printf-style variant of ValuedNewError. Creates a brand-new error
+// enriched with typed Values and a formatted detail message (no wrapping). The returned
+// *valuedError carries all four value kinds simultaneously.
 //
-//nolint:err113
-func ValuedNewErrorf(values []Value, format string, args ...interface{}) *valuedError {
+//nolint:err113 // direct error creation is intentional here.
+func ValuedNewErrorf(values []Value, format string, args ...any) *valuedError {
 	var vErr valuedError
 
 	newErr := fmt.Errorf("%s",
