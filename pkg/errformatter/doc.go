@@ -78,7 +78,7 @@ scope, code, public code) and inspectable at runtime via ValuedErrorGetCode.
 
 When modifying or writing code in this package follow these rules:
 
-**Formatter selection.** Prefer NewValuesErrorFormatter unless simplicity is required.
+**Formatter selection.** Prefer NewValuedErrorFormatter unless simplicity is required.
 It carries KindDetails + KindScope + KindCode + KindPublicCode simultaneously — no
 strategy-switching mid-stack is ever needed.
 
